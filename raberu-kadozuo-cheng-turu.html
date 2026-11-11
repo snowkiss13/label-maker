@@ -1,0 +1,2500 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>ラベル＆カード作成ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.5.1/bwip-js-min.js"></script>
+<style>
+:root{
+--bg:#eceff1; --panel:#ffffff; --panel2:#f5f7f8; --ink:#1b2731; --ink2:#54626d;
+--line:#c9d2d8; --accent:#0e6e63; --accent-ink:#ffffff; --accent-soft:#e0f0ed;
+--warn-bg:#fdf3e0; --warn-line:#e3b959; --warn-ink:#6d4c00;
+--danger:#b3372c; --cell-line:#b9c6cd; --sheet:#ffffff; --sheet-shadow:rgba(20,35,45,.22);
+--mono:"Noto Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#12171b; --panel:#1d242a; --panel2:#232c33; --ink:#e8eef2; --ink2:#a7b5bf;
+--line:#39454e; --accent:#2ea491; --accent-ink:#06231e; --accent-soft:#173832;
+--warn-bg:#3a2f14; --warn-line:#8a6d1f; --warn-ink:#f0d48a;
+--danger:#e08a80; --cell-line:#4a5964; --sheet:#fdfdfd; --sheet-shadow:rgba(0,0,0,.5);
+}
+}
+* { box-sizing: border-box;}
+html{ -webkit-text-size-adjust:100%;}
+body{
+margin:0; background:var(--bg); color:var(--ink);
+font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
+font-size:15px; line-height:1.55;
+}
+button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]), textarea { min-height: 2.25rem;}
+button{
+font:inherit; cursor:pointer; border:1px solid var(--line); background:var(--panel);
+color:var(--ink); border-radius:8px; padding:.45rem.8rem; font-weight:500;
+}
+button:hover{ border-color:var(--accent);}
+button.primary{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.primary:hover{ filter:brightness(1.07);}
+button.small{ min-height:2rem; padding:.25rem.6rem; font-size:.85rem;}
+button.toggle[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700;}
+button.danger{ color:var(--danger);}
+input[type="text"], input[type="number"], select, textarea{
+font:inherit; color:var(--ink); background:var(--panel); border:1px solid var(--line);
+border-radius:8px; padding:.45rem.6rem; width:100%;
+}
+input[type="number"]{ font-family:var(--mono);}
+textarea{ min-height:5.5rem; resize:vertical; line-height:1.5;}
+input[type="range"]{ width:100%; min-height:2.25rem; accent-color:var(--accent);}
+input[type="color"]{ width:3.2rem; padding:.2rem;}
+input[type="file"]{ font-size:.85rem;}
+label.f{ display:block; font-size:.82rem; font-weight:700; color:var(--ink2); margin:0 0.3rem;}
+.wrap{ max-width:1240px; margin:0 auto; padding:14px 14px 40px;}
+.notice{
+background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:10px;
+padding:12px 16px; margin-bottom:14px;
+}
+.notice summary{ cursor:pointer; font-weight:700; color:var(--warn-ink); display:flex; align-items:center; min-height:2.25rem;}
+.notice p,.notice li{ color:var(--ink); font-size:.92rem;}
+.notice ol{ margin:.4rem 0.2rem; padding-left:1.3rem;}
+.layout{ display:grid; grid-template-columns:400px minmax(0,1fr); gap:14px; align-items:start;}
+@media (max-width: 920px){.layout{ grid-template-columns:1fr;}}
+.card{
+background:var(--panel); border:1px solid var(--line); border-radius:12px;
+padding:14px 16px; margin-bottom:14px;
+}
+.card h2{ font-size:1rem; margin:0 0.6rem; padding-bottom:.45rem; border-bottom:2px solid var(--accent-soft); display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; flex-wrap:wrap;}
+.card h2.sub{ font-size:.78rem; font-weight:500; color:var(--ink2);}
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+.grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+@media (max-width:480px){.grid4{ grid-template-columns:1fr 1fr;}}
+.row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.row > *{ flex:0 1 auto;}
+.grow{ flex:1 1 auto!important;}
+.mt{ margin-top:10px;}.mb{ margin-bottom:10px;}
+.small{ font-size:.85rem;}.tiny{ font-size:.78rem;}.muted{ color:var(--ink2);}
+.mono{ font-family:var(--mono); font-size:.86rem;}
+.seg{ display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+.seg button{ flex:1; border:0; border-radius:0; border-right:1px solid var(--line); background:var(--panel2); min-height:2.6rem; font-size:.9rem; padding:.4rem.3rem;}
+.seg button:last-child{ border-right:0;}
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); font-weight:700;}
+.verify{
+background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px 12px;
+font-family:var(--mono); font-size:.82rem; line-height:1.75; overflow-x:auto; white-space:nowrap;
+}
+.verify.ok{ color:var(--accent); font-weight:600;}
+.verify.bad{ color:var(--danger); font-weight:700;}
+.sheetbox{
+background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px;
+display:flex; justify-content:center;
+}
+.sheetbox svg{ width:100%; max-width:520px; height:auto; background:var(--sheet); box-shadow:0 2px 14px var(--sheet-shadow);}
+.sheetbox svg.cell{ cursor:pointer;}
+.printnote{
+border:1.5px dashed var(--warn-line); background:var(--warn-bg); color:var(--warn-ink);
+border-radius:9px; padding:9px 12px; font-weight:700; font-size:.9rem; margin-top:10px;
+}
+.chip{
+display:inline-block; background:var(--accent-soft); color:var(--ink); border-radius:999px;
+padding:.15rem.6rem; font-size:.8rem; font-family:var(--mono); margin:0.3rem.3rem 0; cursor:pointer; border:1px solid transparent;
+}
+.chip:hover{ border-color:var(--accent);}
+.saveli{ display:flex; gap:8px; align-items:center; padding:.45rem 0; border-bottom:1px solid var(--line);}
+.saveli:last-child{ border-bottom:0;}
+.status{ font-size:.88rem; min-height:1.4em;}
+.status.err{ color:var(--danger); font-weight:700;}
+.status.ok{ color:var(--accent); font-weight:700;}
+details.help summary{ cursor:pointer; font-weight:700; min-height:2.25rem; display:flex; align-items:center;}
+.kbd{ font-family:var(--mono); background:var(--panel2); border:1px solid var(--line); border-radius:5px; padding:0.35rem;}
+ul.tight{ margin:.3rem 0; padding-left:1.25rem;} ul.tight li{ margin:.2rem 0;}
+.preset-note{ background:var(--accent-soft); border-radius:8px; padding:8px 11px; font-size:.86rem; margin-top:8px;}
+.objlist{ max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:8px;}
+.objrow{ display:flex; gap:6px; align-items:center; padding:6px 8px; border-bottom:1px solid var(--line); font-size:.86rem; cursor:pointer;}
+.objrow:last-child{ border-bottom:0;} .objrow.sel{ background:var(--accent-soft);} .objrow.locked{ opacity:.55;}
+.tplgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.tpl{ text-align:left; line-height:1.35;} .tpl b{ display:block;} .tpl span{ font-size:.78rem; color:var(--ink2);}
+footer.about{ margin-top:6px;}
+.licensebox{ background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:.82rem; white-space:pre-wrap; font-family:var(--mono); max-height:220px; overflow:auto;}
+/* モバイル幅対策：長い検証行などが列幅を押し広げないようにする */
+.layout > *{ min-width:0;}
+.layout{ grid-template-columns:400px minmax(0,1fr);}
+@media (max-width: 920px){.layout{ grid-template-columns:minmax(0,1fr);}}
+.card{ min-width:0;}
+.verify{ max-width:100%;}
+.grid2 > div,.grid3 > div,.grid4 > div{ min-width:0;}
+select{ max-width:100%;}
+@media (max-width:720px){.grid4{ grid-template-columns:1fr 1fr;}.grid3{ grid-template-columns:1fr 1fr;}.verify{ white-space:normal; word-break:break-all;}}
+/* ===== 段階タブバーと画面構成（本家の画面遷移の流れに寄せた再構成） ===== */
+.stagebar{
+position:sticky; top:0; z-index:40; background:var(--panel); border:1px solid var(--line);
+border-radius:12px; padding:8px; margin-bottom:14px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+box-shadow:0 2px 8px rgba(20,35,45,.08);
+}
+.stagebar .sb-file{ margin-right:4px; }
+.stagebar button.stagetab{
+display:flex; align-items:center; gap:.45rem; border-radius:999px; padding:.45rem .8rem; font-size:.9rem;
+background:var(--panel2); border:1px solid var(--line); min-height:2.4rem;
+}
+.stagebar button.stagetab .n{
+display:inline-flex; align-items:center; justify-content:center; width:1.35rem; height:1.35rem;
+border-radius:50%; background:var(--panel); border:1px solid var(--line); font-size:.78rem; font-family:var(--mono);
+}
+.stagebar button.stagetab[aria-current="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
+.stagebar button.stagetab[aria-current="true"] .n{ background:var(--accent-ink); color:var(--accent); border-color:transparent; }
+.stagebar button.stagetab[hidden]{ display:none; }
+.stagebar .arrow{ color:var(--ink2); font-size:.8rem; }
+.screen{ display:none; }
+.screen.active{ display:block; }
+.nextbtn{ width:100%; min-height:3rem; font-size:1rem; margin-bottom:8px; }
+.subbtn{ width:100%; margin-bottom:8px; }
+/* スタート画面 */
+.startcards{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+@media (max-width:820px){ .startcards{ grid-template-columns:1fr; } }
+.startcard{
+background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px 18px; text-align:center;
+}
+.startcard h3{ margin:.2rem 0 .5rem; font-size:1.12rem; }
+.startcard p{ color:var(--ink2); font-size:.88rem; margin:0 0 1rem; }
+.startcard .big{ font-size:1.9rem; line-height:1; }
+.startcard button{ width:100%; min-height:2.8rem; }
+.openpanel{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+@media (max-width:920px){ .openpanel{ grid-template-columns:1fr; } }
+.openpanel .card{ margin-bottom:0; }
+.openstack{ display:flex; flex-direction:column; gap:14px; }
+/* 用紙選択 */
+.papersearchbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:12px; }
+.papersearchbar .grow2{ flex:1 1 220px; min-width:0; }
+.seg.smallseg button{ min-height:2.25rem; }
+.papergrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.papercard{
+background:var(--panel); border:2px solid var(--line); border-radius:10px; padding:10px; text-align:left;
+display:flex; flex-direction:column; gap:6px; min-height:0;
+}
+.papercard:hover{ border-color:var(--accent); }
+.papercard.sel{ border-color:var(--accent); background:var(--accent-soft); }
+.papercard .pc-name{ font-weight:700; font-size:.88rem; line-height:1.35; }
+.papercard .pc-hinban{ font-size:.74rem; color:var(--ink2); font-family:var(--mono); word-break:break-all; }
+.papercard .pc-size{ font-size:.78rem; color:var(--ink2); }
+.minigrid{ display:grid; gap:1.5px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:4px; width:64px; }
+.minigrid i{ display:block; background:var(--panel); border:1px solid var(--cell-line); border-radius:1px; height:7px; }
+.paperlayout{ display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:14px; align-items:start; }
+@media (max-width:920px){ .paperlayout{ grid-template-columns:1fr; } }
+.infocard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+.infocard h3{ margin:0 0 .5rem; font-size:.95rem; }
+.infocard dl{ margin:0; display:grid; grid-template-columns:auto 1fr; gap:.25rem .8rem; font-size:.88rem; }
+.infocard dt{ color:var(--ink2); font-weight:700; }
+.infocard dd{ margin:0; font-family:var(--mono); font-size:.84rem; }
+/* テンプレート */
+.tpllayout{ display:grid; grid-template-columns:200px minmax(0,1fr); gap:14px; align-items:start; }
+@media (max-width:720px){ .tpllayout{ grid-template-columns:1fr; } }
+.tplgrid{ grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
+/* デザイン編集 */
+.designtoolbar{
+background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px 10px; margin-bottom:14px;
+display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+}
+.designtoolbar .tb-sep{ width:1px; align-self:stretch; background:var(--line); margin:0 4px; }
+.designtoolbar .tb-right{ margin-left:auto; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.designtoolbar button{ min-height:2.3rem; padding:.35rem .6rem; font-size:.86rem; }
+.designgrid{ display:grid; grid-template-columns:250px minmax(0,1fr) 350px; gap:14px; align-items:start; }
+@media (max-width:1180px){ .designgrid{ grid-template-columns:220px minmax(0,1fr) 320px; } }
+@media (max-width:920px){ .designgrid{ grid-template-columns:1fr; } }
+.sidepanel{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.sidepanel .card{ margin-bottom:0; }
+.thumbbox{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px; display:flex; justify-content:center; }
+.thumbbox svg{ width:100%; max-width:190px; height:auto; background:var(--sheet); box-shadow:0 1px 6px var(--sheet-shadow); }
+.thumbbox svg .cell{ cursor:pointer; }
+.facehead{ font-family:var(--mono); font-size:.8rem; color:var(--ink2); margin-bottom:8px; }
+.facebox{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:14px; display:flex; justify-content:center; overflow:hidden; }
+.facebox svg{ width:100%; height:auto; background:var(--sheet); box-shadow:0 2px 10px var(--sheet-shadow); }
+.facewrap{ width:100%; }
+.facewrap.rotated .facebox svg{ transform:rotate(90deg); }
+details.acc{ background:var(--panel); border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden; }
+details.acc > summary{
+cursor:pointer; font-weight:700; padding:12px 16px; min-height:2.6rem; display:flex; align-items:center; background:var(--panel2);
+}
+details.acc > .accbody{ padding:0; }
+details.acc .card{ border:0; border-radius:0; margin-bottom:0; }
+/* レイアウト */
+.layouttoolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.pagenav{ display:flex; justify-content:center; align-items:center; gap:12px; margin-top:12px; }
+.pagenav .pglabel{ font-family:var(--mono); font-size:.9rem; }
+/* 印刷 */
+.printoptions{ display:flex; flex-wrap:wrap; gap:14px 22px; align-items:flex-end; }
+.printoptions label.chk{ display:flex; align-items:center; gap:.45rem; font-weight:500; min-height:2.25rem; cursor:pointer; }
+.printoptions input[type="checkbox"]{ width:1.15rem; height:1.15rem; accent-color:var(--accent); }
+.printgrid{ display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; align-items:start; }
+@media (max-width:920px){ .printgrid{ grid-template-columns:1fr; } }
+.printrail{ display:flex; flex-direction:column; gap:14px; }
+.printrail .card{ margin-bottom:0; }
+/* モーダル */
+.modalback{
+position:fixed; inset:0; background:rgba(10,18,24,.55); z-index:100; display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.modalback[hidden]{ display:none; }
+.modalbox{
+background:var(--panel); color:var(--ink); border-radius:14px; max-width:520px; width:100%; max-height:88vh; overflow:auto;
+padding:20px 22px; box-shadow:0 10px 40px rgba(0,0,0,.35);
+}
+.modalbox h3{ margin:0 0 .6rem; font-size:1.05rem; }
+.modalbox .m-btns{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+.modalbox .m-btns .grow{ flex:1 1 auto; }
+.modalbox label.chk{ display:flex; align-items:center; gap:.45rem; margin-top:12px; cursor:pointer; font-size:.9rem; }
+.modalbox input[type="checkbox"]{ width:1.1rem; height:1.1rem; accent-color:var(--accent); }
+.tplpreview{
+border:1px solid var(--cell-line); border-radius:6px; background:#fff; color:#14181c; padding:12px 14px; margin-top:10px;
+white-space:pre-wrap; line-height:1.5; min-height:5.5rem; box-shadow:0 1px 6px rgba(20,35,45,.15);
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<details class="notice" open>
+<summary>ラベル屋さんクラウドのファイル退避について（2026年12月2日 19:00 終了）</summary>
+<p>「ラベル屋さんクラウド」は <strong>2026年12月2日（水）19:00</strong> でサービスが終了し、終了後はクラウドに保存されたファイルは<strong>削除されて使えなくなります</strong>。一括ダウンロード機能はないため、退避は1ファイルずつ手作業で行う必要があります。</p>
+<ol>
+<li>ラベル屋さん（labelyasan.com）にログインし、クラウド保存したファイルを1つ開く</li>
+<li>「名前を付けて保存」で、保存先を<strong>自分のパソコン</strong>に選んで保存する（拡張子は.aly）</li>
+<li>ファイルの数だけ、1〜2を繰り返す</li>
+</ol>
+<p>保存した.aly ファイルは専用形式のため、このツールでレイアウトを開くことはできません（下の「ラベル屋さんの保存ファイルについて」を参照）。本ツールは .aly への対応を目指していますが、.aly は実験的取り込みで、再現できない要素があります。中に入っている<strong>文字だけ</strong>なら、このツールの「.aly から文字を取り込む（実験的）」で抜き出して流し込めます。大事なデザインは、退避ついでにラベル屋さん側でPDFでも書き出しておくと安心です。</p>
+</details>
+
+<div class="layout">
+<div class="col-left">
+
+<section class="card">
+<h2>1. シート設定 <span class="sub">代表的な用紙プリセット（実寸）</span></h2>
+<label class="f" for="paperSearch">用紙を検索（品番・品名・一片サイズ 例：31504 / 86.4）</label>
+<input type="text" id="paperSearch" placeholder="品番や寸法で絞り込み" />
+<label class="f mt" for="presetSel">プリセット（品番）</label>
+<select id="presetSel"></select>
+<p class="tiny muted">本ツールはエーワン製ラベルシール用紙への対応を目指しています。代表的な用紙プリセットを収録していますが、全ての製品を収録しているわけではありません。一覧に無い用紙は下の「自由設定」（0.1mm単位）で実寸を入れて対応してください。初回はテスト印刷と位置補正をしてください。</p>
+<div id="presetNote" class="preset-note" hidden></div>
+<div class="grid4 mt">
+<div><label class="f" for="inCols">列数</label><input type="number" id="inCols" min="1" max="20" step="1" /></div>
+<div><label class="f" for="inRows">段数</label><input type="number" id="inRows" min="1" max="30" step="1" /></div>
+<div><label class="f" for="inW">ラベル幅 mm</label><input type="number" id="inW" min="1" max="210" step="0.1" /></div>
+<div><label class="f" for="inH">ラベル高 mm</label><input type="number" id="inH" min="1" max="297" step="0.1" /></div>
+<div><label class="f" for="inML">左余白 mm</label><input type="number" id="inML" min="0" max="100" step="0.1" /></div>
+<div><label class="f" for="inMT">上余白 mm</label><input type="number" id="inMT" min="0" max="100" step="0.1" /></div>
+<div><label class="f" for="inGX">横間隔 mm</label><input type="number" id="inGX" min="0" max="50" step="0.05" /></div>
+<div><label class="f" for="inGY">縦間隔 mm</label><input type="number" id="inGY" min="0" max="50" step="0.05" /></div>
+</div>
+<p class="tiny muted mt">数値を変えると「自由設定」になります。お使いの製品の品番が分かれば、その実寸をここに入れるのが確実です。</p>
+<div class="mt">
+<label class="f">印刷位置の補正（全ラベル一括・0.1mm単位）</label>
+<div class="grid2">
+<div><label class="f" for="inOX">左右補正 mm（+で右へ）</label><input type="number" id="inOX" step="0.1" value="0" /></div>
+<div><label class="f" for="inOY">上下補正 mm（+で下へ）</label><input type="number" id="inOY" step="0.1" value="0" /></div>
+</div>
+<p class="tiny muted">プリンターごとの給紙ずれは、まずテスト印刷で量を測り、ここで補正してください。</p>
+</div>
+</section>
+
+<section class="card">
+<h2>2. 編集モード</h2>
+<div class="seg" role="group" aria-label="編集モード">
+<button type="button" id="modeSame" aria-pressed="true">全面同じ内容</button>
+<button type="button" id="modeEach" aria-pressed="false">面ごとに編集</button>
+<button type="button" id="modeCsv" aria-pressed="false">CSV差し込み</button>
+</div>
+<p class="tiny muted mt" id="modeHint">全てのラベルに同じデザインが入ります。</p>
+</section>
+
+<section class="card">
+<h2>3. デザイン編集 <span class="sub" id="editTargetLabel">対象：全ラベル共通</span></h2>
+<label class="f" for="taText">文字（複数行OK）</label>
+<textarea id="taText" placeholder="例）&#10;〒270-0234&#10;千葉県野田市日の出町22-4&#10;杜澤 岳彦 様"></textarea>
+<div id="csvTemplateBox" hidden>
+<p class="tiny muted">CSV差し込み用テンプレート： <span class="kbd">{列名}</span> が各行の値に置き換わります。下のCSV欄で列名チップを押すと挿入できます。</p>
+</div>
+<div class="grid2 mt">
+<div>
+<label class="f" for="inFont">文字サイズ <span id="fontVal" class="mono">11pt</span></label>
+<input type="range" id="inFont" min="5" max="36" step="0.5" value="11" />
+</div>
+<div>
+<label class="f" for="inColor">文字色</label>
+<input type="color" id="inColor" value="#14181c" />
+</div>
+</div>
+<div class="grid2 mt">
+<div>
+<label class="f">横の配置</label>
+<div class="seg" role="group" aria-label="横配置">
+<button type="button" data-align="left" aria-pressed="true">左</button>
+<button type="button" data-align="center" aria-pressed="false">中央</button>
+<button type="button" data-align="right" aria-pressed="false">右</button>
+</div>
+</div>
+<div>
+<label class="f">太字</label>
+<button type="button" id="btnBold" class="toggle" aria-pressed="false" style="width:100%">太字にする</button>
+</div>
+</div>
+
+<div class="mt" style="border-top:1px solid var(--line); padding-top:12px;">
+<div class="row">
+<button type="button" id="btnQr" class="toggle" aria-pressed="false">QRコードを付ける</button>
+<span class="tiny muted">ラベル右下に配置</span>
+</div>
+<div id="qrBox" hidden>
+<label class="f mt" for="inQrText">QRの中身（URL・文字。CSV時は {列名} も使えます）</label>
+<input type="text" id="inQrText" placeholder="https://…" />
+<label class="f mt" for="inQrSize">QRの大きさ <span id="qrSizeVal" class="mono">20mm</span></label>
+<input type="range" id="inQrSize" min="8" max="40" step="1" value="20" />
+</div>
+</div>
+
+<div class="mt" style="border-top:1px solid var(--line); padding-top:12px;">
+<label class="f" for="imgFile">画像（ロゴなど・ラベル右上に配置）</label>
+<input type="file" id="imgFile" accept="image/png,image/jpeg,image/gif,image/webp" />
+<div id="imgBox" hidden>
+<label class="f mt" for="inImgW">画像の幅 <span id="imgWVal" class="mono">20mm</span></label>
+<input type="range" id="inImgW" min="5" max="60" step="1" value="20" />
+<button type="button" id="btnImgDel" class="small danger mt">画像を外す</button>
+</div>
+</div>
+</section>
+
+<section class="card">
+<h2>3.5 テンプレート <span class="sub">自作の雛形</span></h2>
+<label class="f" for="tplCat">カテゴリ</label>
+<select id="tplCat"><option value="">すべて</option><option>宛名</option><option>差出人</option><option>名刺</option><option>表示・値札</option><option>住所+QR</option><option>連番・資産管理</option></select>
+<div class="tplgrid mt" id="tplGrid"></div>
+<p class="tiny muted mt">選ぶと現在の編集対象デザインに雛形が入ります（文字はサンプルの汎用文面です。書き換えて使ってください）。</p>
+</section>
+
+<section class="card">
+<h2>3.6 文字の装飾 <span class="sub">主テキスト用</span></h2>
+<div class="grid2">
+<div><label class="f" for="inFontFam">フォント（端末フォント名）</label>
+<select id="inFontFam">
+<option value="">標準（Noto Sans JP）</option>
+<option value="'Yu Gothic UI','Yu Gothic',sans-serif">游ゴシック</option>
+<option value="'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif">ヒラギノ角ゴシック</option>
+<option value="Meiryo,sans-serif">メイリオ</option>
+<option value="'Hiragino Mincho ProN','Yu Mincho',serif">明朝系（ヒラギノ明朝／游明朝）</option>
+<option value="'Maru Gothic','Hiragino Maru Gothic ProN',sans-serif">丸ゴシック系</option>
+<option value="monospace">等幅</option>
+</select></div>
+<div><label class="f" for="inBg">ラベル背景色</label><input type="color" id="inBg" value="#ffffff" /></div>
+</div>
+<div class="grid3 mt">
+<div><label class="f" for="inLS">文字間隔 em</label><input type="number" id="inLS" step="0.02" min="0" max="0.6" value="0" /></div>
+<div><label class="f" for="inLH">行間 倍率</label><input type="number" id="inLH" step="0.05" min="0.9" max="2.2" value="1.3" /></div>
+<div><label class="f" for="inStrokeW">フチ太さ pt</label><input type="number" id="inStrokeW" step="0.25" min="0" max="3" value="0" /></div>
+</div>
+<div class="row mt">
+<button type="button" id="btnVertical" class="toggle" aria-pressed="false">縦書き</button>
+<button type="button" id="btnShadow" class="toggle" aria-pressed="false">影</button>
+<button type="button" id="btn3d" class="toggle" aria-pressed="false">3D文字（影の重ね）</button>
+<label class="grow">フチ色 <input type="color" id="inStrokeC" value="#ffffff" /></label>
+</div>
+<label class="f mt" for="inBorderW">ラベル枠線（0でなし）太さ mm</label>
+<div class="row"><input type="number" id="inBorderW" step="0.1" min="0" max="2" value="0" class="grow" /><input type="color" id="inBorderC" value="#333333" /></div>
+</section>
+
+<section class="card">
+<h2>3.7 オブジェクト <span class="sub">図形・コード・日付・表・連番・カレンダー</span></h2>
+<label class="f" for="objType">追加するオブジェクト</label>
+<div class="row">
+<select id="objType" class="grow">
+<option value="text">通常文字（追加テキスト）</option>
+<option value="circular">円周文字</option>
+<option value="date">日付文字（今日の日付）</option>
+<option value="rect">四角形</option><option value="circle">丸</option><option value="triangle">三角形</option>
+<option value="pentagon">五角形</option><option value="hexagon">六角形</option><option value="star">星</option>
+<option value="arrow">矢印</option><option value="line">直線</option><option value="line-arrow">直線（端点矢印）</option><option value="curve">曲線</option>
+<option value="barcode-jan">バーコード JAN／EAN-13</option><option value="barcode-ean8">バーコード EAN-8</option><option value="barcode-upca">バーコード UPC-A</option><option value="barcode-upce">バーコード UPC-E</option><option value="barcode-39">バーコード Code39</option><option value="barcode-128">バーコード Code128</option><option value="barcode-itf">バーコード ITF（インターリーブド2of5）</option><option value="barcode-itf14">バーコード ITF-14</option><option value="barcode-codabar">バーコード NW-7（Codabar）</option><option value="isbn">ISBNバーコード（EAN-13ベース）</option>
+<option value="table">表</option><option value="serial">連番</option><option value="calendar">カレンダー</option>
+</select>
+<button type="button" id="btnObjAdd" class="primary">追加</button>
+</div>
+<p class="tiny muted mt" id="bwipStatus" hidden>バーコード生成ライブラリ bwip-js を読み込めなかったため、JAN／EAN-13・Code39・Code128・ISBN は独自実装で描画しています（その他の規格は表示できません）。通信環境を確認して再読み込みすると bwip-js が使えます。</p>
+<p class="tiny muted mt" id="bwipOk">バーコードは bwip-js（MIT）で生成します。対応：JAN／EAN-13、EAN-8、UPC-A／E、Code39、Code128、ITF、ITF-14、NW-7（Codabar）、ISBN。</p>
+<div class="objlist mt" id="objList"><p class="tiny muted" style="padding:8px;">オブジェクトはまだありません。</p></div>
+<div id="objForm" hidden>
+<label class="f mt" for="objText">内容（文字／コード値／表は「行ごとに改行・セルはカンマ区切り」）</label>
+<textarea id="objText" style="min-height:4rem;"></textarea>
+<div class="grid2 mt">
+<div><label class="f" for="objFmt">日付書式／連番・カレンダー設定</label>
+<select id="objFmt">
+<option value="yyyy/MM/dd">日付: 2026/11/11</option><option value="yyyy年M月d日">日付: 2026年11月11日</option><option value="yy/MM/dd">日付: 26/11/11</option><option value="M/d">日付: 11/11</option>
+<option value="serial">連番（下の開始・増分・桁数を使用）</option><option value="calendar">カレンダー（下の年月を使用）</option>
+</select></div>
+<div><label class="f" for="objFont">文字サイズ pt</label><input type="number" id="objFont" step="0.5" min="4" max="48" value="11" /></div>
+</div>
+<div class="grid4 mt">
+<div><label class="f" for="objX">X mm</label><input type="number" id="objX" step="0.5" /></div>
+<div><label class="f" for="objY">Y mm</label><input type="number" id="objY" step="0.5" /></div>
+<div><label class="f" for="objW">幅 mm</label><input type="number" id="objW" step="0.5" /></div>
+<div><label class="f" for="objH">高 mm</label><input type="number" id="objH" step="0.5" /></div>
+<div><label class="f" for="objAngle">角度 °</label><input type="number" id="objAngle" step="5" min="-180" max="180" value="0" /></div>
+<div><label class="f" for="objRows">表 行数</label><input type="number" id="objRows" step="1" min="1" max="12" value="2" /></div>
+<div><label class="f" for="objCols">表 列数</label><input type="number" id="objCols" step="1" min="1" max="8" value="2" /></div>
+<div><label class="f" for="objYearM">カレンダー 年月</label><input type="text" id="objYearM" placeholder="2026-11" /></div>
+<div><label class="f" for="serStart">連番 開始</label><input type="number" id="serStart" step="1" value="1" /></div>
+<div><label class="f" for="serStep">連番 増分</label><input type="number" id="serStep" step="1" value="1" /></div>
+<div><label class="f" for="serDigits">連番 桁数</label><input type="number" id="serDigits" step="1" min="1" max="10" value="4" /></div>
+<div><label class="f" for="serAffix">連番 前/後文字</label><input type="text" id="serAffix" placeholder="例 ASSET-" /></div>
+</div>
+<div class="grid2 mt">
+<div><label class="f" for="objFill">塗り色</label><input type="color" id="objFill" value="#0e6e63" /></div>
+<div><label class="f" for="objStroke">線・文字色</label><input type="color" id="objStroke" value="#14181c" /></div>
+</div>
+<div class="row mt">
+<button type="button" class="small" data-alignobj="left">左寄せ</button><button type="button" class="small" data-alignobj="hcenter">横中央</button><button type="button" class="small" data-alignobj="right">右寄せ</button>
+<button type="button" class="small" data-alignobj="top">上寄せ</button><button type="button" class="small" data-alignobj="vcenter">縦中央</button><button type="button" class="small" data-alignobj="bottom">下寄せ</button>
+</div>
+<div class="row mt">
+<button type="button" id="btnObjDup" class="small">複製</button>
+<button type="button" id="btnObjUp" class="small">前面へ</button>
+<button type="button" id="btnObjDown" class="small">背面へ</button>
+<button type="button" id="btnObjLock" class="small toggle" aria-pressed="false">ロック</button>
+<button type="button" id="btnObjDel" class="small danger">削除</button>
+</div>
+<p class="tiny muted">数値はラベル左上からの位置（mm）です。{列名} の差し込みはオブジェクトの文字にも使えます（CSVモード時）。</p>
+</div>
+<div class="row mt">
+<button type="button" id="btnUndo" class="small">元に戻す</button>
+<button type="button" id="btnRedo" class="small">やり直す</button>
+<span class="tiny muted">Ctrl+Z / Ctrl+Y でも操作できます</span>
+</div>
+</section>
+
+<section class="card">
+<h2>3.8 レイアウト <span class="sub">面コピー・ページ</span></h2>
+<div class="row">
+<button type="button" id="btnCopyAll" class="small">選択面を全ての面へコピー</button>
+<button type="button" id="btnCopySel" class="small">選択面を指定面へコピー</button>
+<input type="number" id="copyTo" min="1" value="2" style="width:5.5rem;" aria-label="コピー先の面番号" />
+<button type="button" id="btnClearSel" class="small danger">選択面をクリア</button>
+</div>
+<p class="tiny muted mt">「面ごとに編集」モードで使います。複数ページはCSV差し込み（自動でページ追加）と連番（ページをまたいで加算）で対応しています。印刷開始位置は下のPDF欄で指定できます。</p>
+</section>
+
+<section class="card" id="csvCard" hidden>
+<h2>4. CSV差し込み <span class="sub">1行 = 1ラベル</span></h2>
+<label class="f" for="csvFile">CSVファイル（1行目が見出し）</label>
+<input type="file" id="csvFile" accept=".csv,text/csv,text/plain" />
+<div id="csvInfo" class="mt"></div>
+<div id="csvChips" class="mt"></div>
+<p class="tiny muted">行数が1シートの面数を超えると、PDFは自動で複数ページになります。文字コードは UTF-8 / Shift_JIS に対応しています。</p>
+</section>
+
+<section class="card">
+<h2>5. 保存・読み込み</h2>
+<div class="row">
+<input type="text" id="saveName" class="grow" placeholder="デザイン名（例：宛名ラベル）" />
+<button type="button" id="btnSave">保存</button>
+</div>
+<div id="saveList" class="mt"></div>
+<div class="row mt">
+<button type="button" id="btnExport">JSONで書き出す</button>
+<label class="grow" style="margin:0;">
+<span class="f" style="margin-bottom:.3rem;">JSONを読み込む</span>
+<input type="file" id="importFile" accept=".json,application/json" />
+</label>
+</div>
+<div class="row mt">
+<button type="button" id="btnReset" class="danger">新規（全て消去）</button>
+</div>
+<p class="tiny muted mt">「保存」はこのブラウザの中に残ります（端末・ブラウザごとに別々です）。他のパソコンでも使うもの、長期保管するものは <strong>JSONで書き出して</strong> ファイルとして持っておくのが確実です。</p>
+<p class="status" id="saveStatus" role="status"></p>
+</section>
+
+</div>
+<div class="col-right">
+
+<section class="card">
+<h2>プレビュー <span class="sub" id="previewSub">A4判 210×297mm</span></h2>
+<div class="sheetbox"><div id="sheetHost" style="width:100%; display:flex; justify-content:center;"></div></div>
+<div class="row mt">
+<label class="f grow" for="inZoom">ズーム <span id="zoomVal" class="mono">100%</span></label>
+<input type="range" id="inZoom" min="40" max="220" step="10" value="100" class="grow" />
+</div>
+<div class="row mt">
+<button type="button" id="btnTestOverlay" class="toggle" aria-pressed="false">寸法表示（テスト用）</button>
+<span class="tiny muted" id="selInfo">面ごとに編集する場合は、プレビューの面を押して選んでください。</span>
+</div>
+</section>
+
+<section class="card">
+<h2>6. 印刷用PDFを作る</h2>
+<div class="row">
+<button type="button" id="btnPdf" class="primary" style="min-height:3rem; padding:.6rem 1.4rem; font-size:1.02rem;">PDFをダウンロード</button>
+<button type="button" id="btnTestPdf" style="min-height:3rem;">テスト印刷用PDF（枠線・寸法入り）</button>
+</div>
+<div class="grid2 mt">
+<div><label class="f" for="inStartCell">印刷開始位置（使いかけシート用・何面目から）</label><input type="number" id="inStartCell" min="1" step="1" value="1" /></div>
+<div><label class="f" for="inCopies">追加ページ数（連番・全面同じ用）</label><input type="number" id="inCopies" min="1" step="1" value="1" /></div>
+</div>
+<div class="row mt">
+<button type="button" id="btnPng">デザイン面をPNGで書き出す</button>
+<button type="button" id="btnJpg">デザイン面をJPGで書き出す</button>
+<span class="tiny muted">編集面1面分を300dpiで画像化します</span>
+</div>
+<div class="printnote">印刷設定は必ず： 倍率 100%（実際のサイズ）／「用紙に合わせる」をオフ ／ 用紙 A4。ずれる場合は普通紙でテスト印刷し、補正値（0.1mm単位）で合わせてください。</div>
+<p class="small muted mt">PDFは A4 実寸（210×297mm）で生成し、各ラベルを mm 単位の座標に正確に配置します。日本語が文字化けしないよう、文字は高解像度（300dpi）で描画してPDFに埋め込んでいます。</p>
+<p class="status" id="pdfStatus" role="status"></p>
+</section>
+
+<section class="card">
+<h2>寸法の検証 <span class="sub">実寸チェック</span></h2>
+<div class="verify" id="verifyBox"></div>
+<p class="tiny muted mt">右余白・下余白は「用紙寸法 −（余白＋ラベル寸法×面数＋間隔）」で算出した値です。マイナスになる設定ではPDFを作れません。</p>
+</section>
+
+<section class="card">
+<details class="help">
+<summary>ラベル屋さんの保存ファイル（.aly）について／文字の取り込み</summary>
+<ul class="tight">
+<li>ラベル屋さんの保存形式は <strong>.aly</strong>（差し込み印刷用は.alym、旧バージョンは.lcx）です。エーワン公式マニュアルで確認した形式ですが、<strong>仕様は非公開の専用形式</strong>です。</li>
+<li>ラベル屋さん自身でも、PDFは「編集できない」ことが公式に明記されています。同じく、このツールでも <strong>.aly のレイアウトを開くことはできません</strong>。デザインは作り直しになります。</li>
+<li>代わりに、下の実験的取り込みで.aly /.alym の中から<strong>文字列だけ</strong>を抜き出し、各面に流し込むことができます。.aly は実験的取り込みで、再現できない要素があります（レイアウト・文字サイズ・画像は復元されません）。</li>
+<li>本機能は利用者自身のファイルを読み取るためのもので、公式ソフトの解析を目的としたものではありません。暗号化等の保護がかかっているデータは読みません。</li>
+</ul>
+<p class="small">調査メモ： .aly は仕様が公式非公開の形式です。本ツールは、利用者が選んだファイルについて ZIP→XML の DOM 解析（要素名・属性・テキストノードを走査し、x/y/width/height/fontSize 等を持つ要素の文字は位置付きテキストとして再配置を試行）、Shift_JIS／UTF-8／UTF-16 の自動判定、可読文字列の候補一覧からの選択式流し込み、取り込みレポートに対応します。ただし<strong>実物の .aly サンプルが無いため、元のレイアウトの再現は検証できていません</strong>。サンプルファイルを提供いただければ精度を上げられます。</p>
+<label class="f mt" for="alyFile">.aly /.alym ファイルを選ぶ</label>
+<input type="file" id="alyFile" accept=".aly,.alym" />
+<p class="status" id="alyStatus" role="status"></p>
+<div id="alyReport" class="verify" hidden></div>
+<div id="alyCandidates" hidden>
+<p class="f mt">抽出候補（流し込む文字にチェック）</p>
+<div id="alyCandList" style="max-height:180px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:6px 10px;"></div>
+<div class="row mt"><button type="button" id="btnAlyCandFill" class="small">チェックした候補を各面に流し込む</button><button type="button" id="btnAlyCandText" class="small">チェックした候補を下の欄へ反映</button></div>
+</div>
+<div id="alyResult" hidden>
+<label class="f" for="alyText">抽出された文字列（1行 = 1面分）</label>
+<textarea id="alyText" style="min-height:7rem;"></textarea>
+<div class="row mt">
+<button type="button" id="btnAlyFill">この内容を各面に流し込む</button>
+<span class="tiny muted">「面ごとに編集」モードに切り替えて流し込みます。不要な行は先に消してください。</span>
+</div>
+</div>
+</details>
+</section>
+
+<section class="card">
+<h2>このツールについて <span class="sub">非公式の互換対応を目指すツールです</span></h2>
+<p class="small" style="border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--panel2);">非公式ツールです。「エーワン」「ラベル屋さん」は3M社の商標で、本ツールは対応用紙・形式の説明のためにのみ名称を使用しています。公式製品ではありません。</p>
+<details class="help" open>
+<summary>詳しい注意・ライセンス・第三者ライブラリ</summary>
+<p class="small">本ツールは、個人による非公式のオープンソースソフトウェアです。スリーエム ジャパン株式会社およびエーワン（A-one）とは関係がなく、公式製品・公式サービスではありません。「エーワン」「A-one」「ラベル屋さん」は3M社の商標です。本ツールでは、対応する用紙・ファイル形式を説明するためにのみ、これらの名称を記述的に使用しています。</p>
+<p class="small">本ツールは、一般的なラベル作成の機能と操作の流れを参考に独自実装したものです。公式のデザインテンプレート、素材画像、フォント、プログラムコードは一切含んでいません。テンプレートはすべて自作の雛形です。公式ロゴや公式画面の画像も使用していません。</p>
+<p class="small">収録している用紙寸法は、製品パッケージ等で公表されている数値（事実情報）をもとに作成者が独自に作成したものです。代表的な用紙プリセットを収録しており、全ての製品への対応を目指していますが、全製品を収録しているわけではありません。</p>
+<p class="small">.aly ファイルの読み込みは実験的機能です。.aly は実験的取り込みで、再現できない要素があります。本機能は利用者自身のファイルを読み取るためのもので、公式ソフトの解析を目的としたものではありません。暗号化等の保護がかかっているデータは読みません。</p>
+<p class="small">印刷結果（寸法の一致を含む）を保証するものではありません。お使いのプリンターでは、初回はテスト印刷と位置補正をしてください。本ツールは単一HTMLファイルとして書き出して GitHub 等で公開できます（外部ライブラリはCDN読み込み）。</p>
+<p class="small">本ソフトウェアは MIT ライセンスのもと現状有姿で提供され、明示・黙示を問わずいかなる保証も行いません。本ソフトウェアの利用により生じた損害について、作成者は責任を負いません。権利者の方で表記や機能についてお気づきの点がありましたら、GitHub リポジトリの Issue からご連絡ください。速やかに対応します。</p>
+<p class="f">ライセンス： MIT License</p>
+<div class="licensebox">MIT License
+
+Copyright (c) 2026 Label Card Tool Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</div>
+<p class="f mt">第三者ライブラリ（CDN読み込み）</p>
+<ul class="tight small">
+<li>jsPDF 2.5.1（MIT） — PDF生成</li>
+<li>JSZip 3.10.1（MIT / GPLv3 デュアル） — .aly（ZIP形式）の展開</li>
+<li>qrcode-generator 1.4.4（MIT、Kazuhiko Arase） — QRコード生成</li>
+<li>bwip-js 4.5.1（MIT、https://github.com/metafloor/bwip-js） — バーコード生成（JAN／EAN-13、EAN-8、UPC-A／E、Code39、Code128、ITF、ITF-14、NW-7／Codabar、ISBN 等）</li>
+<li>Noto Sans JP / Noto Sans Mono（SIL Open Font License 1.1、Google Fonts） — 表示フォント</li>
+<li>バーコードは bwip-js を優先し、読み込めない場合は独自実装（JAN13 チェックディジット／Code39／Code128／ISBN）にフォールバックします。連番、カレンダー、図形描画は本ツールの独自実装です</li>
+</ul>
+<p class="small muted">保存形式は本ツール独自のJSONです。ブラウザ内保存はこの端末のブラウザにのみ残ります。CSV差し込みはワークシート指定なしで読み込みます（CSVにはシート概念がないため）。</p>
+</details>
+</section>
+
+<section class="card">
+<details class="help">
+<summary>使い方の流れ</summary>
+<ol style="margin:.3rem 0; padding-left:1.3rem;">
+<li><strong>シート設定</strong>で、お使いのラベル製品のプリセットを選ぶ（代表的な用紙プリセットを収録しています。初回はテスト印刷と位置補正をしてください）。</li>
+<li>同じ宛名を全面に刷るなら「全面同じ内容」、宛名違いなら「面ごとに編集」か「CSV差し込み」。</li>
+<li>文字を入力し、サイズ・配置・太字・QR・画像を調整する。</li>
+<li><strong>テスト印刷用PDF</strong>を普通紙に印刷し、ラベル紙に重ねて光に透かして位置を確認。ずれは「印刷位置の補正」で直す。</li>
+<li>本番の <strong>PDFをダウンロード</strong> し、倍率100%でラベル紙に印刷する。</li>
+<li>デザインは「保存」か「JSONで書き出す」で残す。</li>
+</ol>
+</details>
+</section>
+
+</div>
+</div>
+
+<footer class="about" style="border-top:1px solid var(--line); padding:14px 4px 4px; margin-top:4px;">
+<p class="small" style="margin:0 0 .4rem;">非公式ツールです。「エーワン」「ラベル屋さん」は3M社の商標で、本ツールは対応用紙・形式の説明のためにのみ名称を使用しています。公式製品ではありません。</p>
+<p class="tiny muted" style="margin:0;">本ツールは個人による非公式のオープンソースソフトウェアです。エーワン製ラベルシール用紙への対応を目指しています。代表的な用紙プリセットを収録しています。.aly は実験的取り込みで、再現できない要素があります。初回はテスト印刷と位置補正をしてください。印刷結果を保証するものではありません。MITライセンスで現状有姿で提供されます。</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+var FONT_STACK = '"Noto Sans JP","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif';
+var MM_PT = 2.83465;
+
+/* ===== プリセット（出典：エーワン公式商品ページ／日本郵便「ご利用可能なあて名ラベル一覧」） ===== */
+var PRESETS = [
+ {id:'p12a', name:'12面 宛名・標準 86.4×42.3mm', cols:2, rows:6, w:86.4, h:42.3, ml:18.6, mt:21.2, gx:0, gy:0, hinban:'26503 / 28362 / 31504 / 72212 / 75212'},
+ {id:'p10', name:'10面 宛名 86.4×50.8mm', cols:2, rows:5, w:86.4, h:50.8, ml:18.6, mt:21.2, gx:0, gy:0, hinban:'28367 / 72210 / 75210'},
+ {id:'p12b', name:'12面 83.8×42.3mm', cols:2, rows:6, w:83.8, h:42.3, ml:19.3, mt:21.5, gx:3.8, gy:0, hinban:'28183 / 72312'},
+ {id:'p8', name:'8面 表示ラベル 97×69mm', cols:2, rows:4, w:97, h:69, ml:8, mt:10.5, gx:0, gy:0, hinban:'60208 / 72208', note:'品番31314系の「105×74.25mm・8面」とは別製品です。お使いの品番が31314系の場合は自由設定で 105×74.25 を入れてください。'},
+ {id:'p24a', name:'24面 上下余白付 70×33.9mm', cols:3, rows:8, w:70, h:33.9, ml:0, mt:12.7, gx:0, gy:0, hinban:'72324系'},
+ {id:'p24b', name:'24面 四辺余白付 66×33.9mm', cols:3, rows:8, w:66, h:33.9, ml:6, mt:12.9, gx:0, gy:0, hinban:'72224系'},
+ {id:'p21', name:'21面 63.5×38.1mm', cols:3, rows:7, w:63.5, h:38.1, ml:7.2, mt:15.15, gx:2.55, gy:0, hinban:'72221'},
+ {id:'p18', name:'18面 63.5×46.5mm', cols:3, rows:6, w:63.5, h:46.5, ml:7.2, mt:9, gx:2.55, gy:0, hinban:'72218'},
+ {id:'p27', name:'27面 62×31mm', cols:3, rows:9, w:62, h:31, ml:9, mt:9, gx:3, gy:0, hinban:'72227系'},
+ {id:'p44', name:'44面 48.3×25.4mm', cols:4, rows:11, w:48.3, h:25.4, ml:8.4, mt:8.8, gx:0, gy:0, hinban:'72244 / 31268'},
+ {id:'p65', name:'65面 38.1×21.2mm', cols:5, rows:13, w:38.1, h:21.2, ml:4.75, mt:10.9, gx:2.5, gy:0, hinban:'72265 / 31269', note:'この面付けは上下の余白が対称になりません（上10.9mm／下10.5mm）。印刷前に必ずテスト印刷で位置を確認し、ずれる場合は「印刷位置の補正」（0.1mm単位）で合わせてください。'},
+ {id:'card10', name:'名刺10面 マルチカード 91×55mm', cols:2, rows:5, w:91, h:55, ml:14, mt:11, gx:0, gy:0, hinban:'51003 / 51275 / 51861 ほか（マルチカード）'},
+ {id:'p4', name:'4面 105×148.5mm（ハガキ大×4）', cols:2, rows:2, w:105, h:148.5, ml:0, mt:0, gx:0, gy:0, hinban:'72204'},
+ {id:'p2', name:'2面 210×148.5mm', cols:1, rows:2, w:210, h:148.5, ml:0, mt:0, gx:0, gy:0, hinban:'72202'},
+ {id:'p1', name:'1面 ノーカット 210×297mm', cols:1, rows:1, w:210, h:297, ml:0, mt:0, gx:0, gy:0, hinban:'28391'},
+ {id:'custom', name:'自由設定（数値を直接入力）', custom:true}
+];
+function presetById(id){ for(var i=0;i<PRESETS.length;i++) if(PRESETS[i].id===id) return PRESETS[i]; return PRESETS[0]; }
+
+function emptyDesign(){ return {text:'', fontSize:11, align:'left', bold:false, color:'#14181c', qr:false, qrText:'', qrSize:20, img:null, imgW:20, imgAspect:1, fontFamily:'', vertical:false, letterSpacing:0, lineHeight:1.3, strokeW:0, strokeColor:'#ffffff', shadow:false, threeD:false, bg:'#ffffff', borderW:0, borderColor:'#333333', objects:[]}; }
+function cloneDesign(d){ var c = emptyDesign(); for(var k in d) c[k]=d[k]; c.objects = (d.objects||[]).map(function(o){ var n={}; for(var k2 in o) n[k2]=o[k2]; return n; }); return c; }
+var objSeq = 1;
+function newObj(type){ return {id:'o'+(objSeq++), type:type, text: defObjText(type), x:3, y:3, w:30, h:12, angle:0, fontSize:11, fill:'#0e6e63', stroke:'#14181c', rows:2, cols:2, fmt:'yyyy/MM/dd', yearMonth:'', serStart:1, serStep:1, serDigits:4, serPrefix:'', locked:false}; }
+function defObjText(type){
+ if(type==='date') return '';
+ if(type==='barcode-jan') return '490123456789';
+ if(type==='isbn') return '978-4-00-000000-0';
+ if(type==='barcode-ean8') return '4901234';
+ if(type==='barcode-upca') return '01234567890';
+ if(type==='barcode-upce') return '0123456';
+ if(type==='barcode-itf'||type==='barcode-itf14') return type==='barcode-itf14' ? '1234567890123' : '123456789012';
+ if(type==='barcode-codabar') return 'A1234A';
+ if(type==='barcode-39'||type==='barcode-128') return 'ABC-1234';
+ if(type==='table') return '項目,値\n品名,サンプル';
+ if(type==='serial') return '';
+ if(type==='calendar') return '';
+ if(type==='circular') return 'CIRCULAR TEXT ・ ';
+ if(type==='text') return '追加テキスト';
+ return '';
+}
+
+var state = {
+  presetId:'p12a',
+  geo:{cols:2, rows:6, w:86.4, h:42.3, ml:18.6, mt:21.2, gx:0, gy:0},
+  ox:0, oy:0,
+  mode:'same',
+  shared: emptyDesign(),
+  cells: [],
+  sel: 0,
+  csv: {headers:[], rows:[]},
+  testOverlay:false, startCell:1, copies:1, zoom:100, selObj:null, rotateView:0
+};
+
+function perPage(){ return state.geo.cols * state.geo.rows; }
+function syncCells(){
+  var n = perPage();
+  while(state.cells.length < n) state.cells.push(emptyDesign());
+  if(state.cells.length > n) state.cells.length = n;
+  if(state.sel >= n) state.sel = 0;
+}
+syncCells();
+
+/* ===== DOM ===== */
+function $(id){ return document.getElementById(id); }
+var els = {
+  presetSel:$('presetSel'), presetNote:$('presetNote'),
+  inCols:$('inCols'), inRows:$('inRows'), inW:$('inW'), inH:$('inH'),
+  inML:$('inML'), inMT:$('inMT'), inGX:$('inGX'), inGY:$('inGY'),
+  inOX:$('inOX'), inOY:$('inOY'),
+  modeSame:$('modeSame'), modeEach:$('modeEach'), modeCsv:$('modeCsv'), modeHint:$('modeHint'),
+  editTargetLabel:$('editTargetLabel'), taText:$('taText'), csvTemplateBox:$('csvTemplateBox'),
+  inFont:$('inFont'), fontVal:$('fontVal'), inColor:$('inColor'), btnBold:$('btnBold'),
+  btnQr:$('btnQr'), qrBox:$('qrBox'), inQrText:$('inQrText'), inQrSize:$('inQrSize'), qrSizeVal:$('qrSizeVal'),
+  imgFile:$('imgFile'), imgBox:$('imgBox'), inImgW:$('inImgW'), imgWVal:$('imgWVal'), btnImgDel:$('btnImgDel'),
+  csvCard:$('csvCard'), csvFile:$('csvFile'), csvInfo:$('csvInfo'), csvChips:$('csvChips'),
+  saveName:$('saveName'), btnSave:$('btnSave'), saveList:$('saveList'),
+  btnExport:$('btnExport'), importFile:$('importFile'), btnReset:$('btnReset'), saveStatus:$('saveStatus'),
+  sheetHost:$('sheetHost'), previewSub:$('previewSub'), btnTestOverlay:$('btnTestOverlay'), selInfo:$('selInfo'),
+  btnPdf:$('btnPdf'), btnTestPdf:$('btnTestPdf'), pdfStatus:$('pdfStatus'),
+  verifyBox:$('verifyBox'),
+  alyFile:$('alyFile'), alyStatus:$('alyStatus'), alyResult:$('alyResult'), alyText:$('alyText'), btnAlyFill:$('btnAlyFill'),
+  paperSearch:$('paperSearch'), inFontFam:$('inFontFam'), inBg:$('inBg'), inLS:$('inLS'), inLH:$('inLH'), inStrokeW:$('inStrokeW'), inStrokeC:$('inStrokeC'), btnVertical:$('btnVertical'), btnShadow:$('btnShadow'), btn3d:$('btn3d'), inBorderW:$('inBorderW'), inBorderC:$('inBorderC'),
+  tplCat:$('tplCat'), tplGrid:$('tplGrid'),
+  objType:$('objType'), btnObjAdd:$('btnObjAdd'), objList:$('objList'), objForm:$('objForm'), objText:$('objText'), objFmt:$('objFmt'), objFont:$('objFont'), objX:$('objX'), objY:$('objY'), objW:$('objW'), objH:$('objH'), objAngle:$('objAngle'), objRows:$('objRows'), objCols:$('objCols'), objYearM:$('objYearM'), serStart:$('serStart'), serStep:$('serStep'), serDigits:$('serDigits'), serAffix:$('serAffix'), objFill:$('objFill'), objStroke:$('objStroke'), btnObjDup:$('btnObjDup'), btnObjUp:$('btnObjUp'), btnObjDown:$('btnObjDown'), btnObjLock:$('btnObjLock'), btnObjDel:$('btnObjDel'), btnUndo:$('btnUndo'), btnRedo:$('btnRedo'),
+  btnCopyAll:$('btnCopyAll'), btnCopySel:$('btnCopySel'), copyTo:$('copyTo'), btnClearSel:$('btnClearSel'),
+  inZoom:$('inZoom'), zoomVal:$('zoomVal'), inStartCell:$('inStartCell'), inCopies:$('inCopies'), btnPng:$('btnPng'), btnJpg:$('btnJpg'),
+  alyReport:$('alyReport'), alyCandidates:$('alyCandidates'), alyCandList:$('alyCandList'), btnAlyCandFill:$('btnAlyCandFill'), btnAlyCandText:$('btnAlyCandText')
+};
+function setStatus(el, msg, kind){ el.textContent = msg || ''; el.className = 'status' + (kind ? ' '+kind : ''); }
+
+/* ===== 寸法計算 ===== */
+function margins(){
+  var g = state.geo;
+  var right = 210 - (g.ml + g.w*g.cols + g.gx*(g.cols-1));
+  var bottom = 297 - (g.mt + g.h*g.rows + g.gy*(g.rows-1));
+  return {right:right, bottom:bottom};
+}
+function fmt(n){ return String(parseFloat(n.toFixed(2))); }
+function fmt2(n){ return n.toFixed(2); }
+
+function cellXY(i){
+  var g = state.geo;
+  var col = i % g.cols, row = Math.floor(i / g.cols);
+  return { x: g.ml + state.ox + col*(g.w+g.gx), y: g.mt + state.oy + row*(g.h+g.gy), col:col, row:row };
+}
+
+/* ===== テキスト折り返し（プレビューとPDFで共用） ===== */
+var mctx = document.createElement('canvas').getContext('2d');
+function wrapLines(text, fontPt, bold, maxW){
+  var sizeMm = fontPt * 25.4/72;
+  mctx.font = (bold ? '700 ' : '400 ') + sizeMm + 'px ' + FONT_STACK;
+  var out = [];
+  var paras = String(text == null ? '' : text).split('\n');
+  for(var p=0; p<paras.length; p++){
+    var s = paras[p];
+    if(s === ''){ out.push(''); continue; }
+    var cur = '';
+    for(var i=0; i<s.length; i++){
+      var ch = s.charAt(i);
+      var t = cur + ch;
+      if(cur !== '' && mctx.measureText(t).width > maxW){
+        var sp = cur.lastIndexOf(' ');
+        if(sp > 2){ out.push(cur.slice(0, sp)); cur = cur.slice(sp+1) + ch; }
+        else { out.push(cur); cur = (ch === ' ' ? '' : ch); }
+      } else cur = t;
+    }
+    if(cur !== '' || out.length === 0) out.push(cur);
+  }
+  return out;
+}
+function reservedRight(d){
+  var r = 0;
+  if(d.img) r = Math.max(r, d.imgW);
+  if(d.qr && d.qrText) r = Math.max(r, d.qrSize);
+  return r ? r + 2 : 0;
+}
+var PAD = 1.5;
+function layoutLines(d, wMm){
+  var availW = Math.max(wMm - PAD*2 - reservedRight(d), 8);
+  return { lines: wrapLines(d.text, d.fontSize, d.bold, availW), availW: availW,
+           sizeMm: d.fontSize * 25.4/72, lhMm: d.fontSize * 25.4/72 * (d.lineHeight || 1.3) };
+}
+var RENDER_IDX = 0, RENDER_ROW = null;
+function fontOf(d){ return d.fontFamily ? d.fontFamily + ',' + FONT_STACK : FONT_STACK; }
+
+/* ===== QR ===== */
+function makeQR(text){
+  if(!window.qrcode) return null;
+  try{
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+    var qr = qrcode(0, 'M');
+    qr.addData(text, 'Byte');
+    qr.make();
+    return qr;
+  }catch(e){ return null; }
+}
+function qrSVG(text, sizeMm, x, y){
+  var qr = makeQR(text); if(!qr) return '';
+  var n = qr.getModuleCount(), mod = sizeMm / n, d = '';
+  for(var r=0; r<n; r++) for(var c=0; c<n; c++)
+    if(qr.isDark(r, c)) d += 'M' + (x + c*mod).toFixed(2) + ' ' + (y + r*mod).toFixed(2) + 'h' + mod.toFixed(2) + 'v' + mod.toFixed(2) + 'h' + (-mod).toFixed(2) + 'Z';
+  return '<rect x="' + (x-0.8) + '" y="' + (y-0.8) + '" width="' + (sizeMm+1.6) + '" height="' + (sizeMm+1.6) + '" fill="#ffffff"/>' +
+         '<path d="' + d + '" fill="#000000"/>';
+}
+
+/* ===== デザイン取得 ===== */
+function applyTemplate(tpl, row){
+  if(!row) return tpl || '';
+  return String(tpl || '').replace(/\{([^}]+)\}/g, function(m, key){
+    key = key.trim();
+    if(row.hasOwnProperty(key)) return row[key];
+    var idx = parseInt(key, 10);
+    if(!isNaN(idx) && state.csv.headers[idx-1] !== undefined) return row[state.csv.headers[idx-1]];
+    return m;
+  });
+}
+function designFor(i, page){
+  if(state.mode === 'same') return state.shared;
+  if(state.mode === 'each') return state.cells[i] || null;
+  var row = state.csv.rows[page * perPage() + i];
+  if(!row) return null;
+  var d = cloneDesign(state.shared);
+  d.text = applyTemplate(state.shared.text, row);
+  if(d.qr) d.qrText = applyTemplate(state.shared.qrText, row);
+  return d;
+}
+function hasContent(d){
+  return !!(d && ((d.text && d.text.trim() !== '') || (d.qr && d.qrText) || d.img || (d.objects && d.objects.length)));
+}
+function editTarget(){
+  if(state.mode === 'each') return state.cells[state.sel];
+  return state.shared;
+}
+
+/* ===== プレビュー描画（SVG・mm座標） ===== */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function renderPreview(){
+  var g = state.geo, n = perPage();
+  var parts = [];
+  parts.push('<svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A4シートのプレビュー">');
+  parts.push('<rect x="0" y="0" width="210" height="297" fill="#ffffff"/>');
+  for(var i=0; i<n; i++){
+    var pos = cellXY(i);
+    var d = designFor(i, state.viewPage || 0);
+    var sel = (state.mode === 'each' && i === state.sel);
+    parts.push('<g class="cell" data-i="' + i + '">');
+    RENDER_IDX = i; RENDER_ROW = (state.mode==='csv' ? state.csv.rows[(state.viewPage||0)*perPage()+i] : null);
+    var bgFill = d && d.bg && d.bg !== '#ffffff' ? d.bg : (sel ? 'rgba(14,110,99,0.06)' : 'none');
+    parts.push('<rect x="' + pos.x + '" y="' + pos.y + '" width="' + g.w + '" height="' + g.h + '" fill="' + bgFill + '" stroke="' + (sel ? '#0e6e63' : '#b9c6cd') + '" stroke-width="' + (sel ? 0.7 : 0.25) + '"' + (sel ? ' stroke-dasharray="2 1.2"' : '') + '/>');
+    if(d && d.borderW > 0) parts.push('<rect x="' + (pos.x + d.borderW/2) + '" y="' + (pos.y + d.borderW/2) + '" width="' + (g.w - d.borderW) + '" height="' + (g.h - d.borderW) + '" fill="none" stroke="' + esc(d.borderColor||'#333') + '" stroke-width="' + d.borderW + '"/>');
+    if(d){
+      var lay = layoutLines(d, g.w);
+      var tx = pos.x + PAD, ty = pos.y + PAD;
+      var tspans = '';
+      var lsAttr = d.letterSpacing ? ' letter-spacing="' + (d.letterSpacing * lay.sizeMm).toFixed(2) + '"' : '';
+      var strokeAttr = d.strokeW > 0 ? ' stroke="' + esc(d.strokeColor||'#fff') + '" stroke-width="' + (d.strokeW*25.4/72).toFixed(2) + '" paint-order="stroke"' : '';
+      if(d.vertical){
+        var vtext = String(d.text||'').replace(/\n/g,'');
+        var vx = pos.x + g.w - PAD - lay.sizeMm, vy = ty;
+        for(var vi=0; vi<vtext.length; vi++){
+          var vch = vtext.charAt(vi);
+          if(vy + lay.sizeMm > pos.y + g.h - 0.8){ vx -= lay.lhMm; vy = ty; if(vx < pos.x) break; }
+          if(d.shadow || d.threeD) tspans += '<text x="' + (vx+0.35).toFixed(2) + '" y="' + (vy + lay.sizeMm*0.82 + 0.35).toFixed(2) + '" font-size="' + lay.sizeMm.toFixed(2) + '" font-weight="' + (d.bold?700:400) + '" fill="rgba(0,0,0,.35)" font-family="' + esc(fontOf(d)) + '">' + esc(vch) + '</text>';
+          tspans += '<text x="' + vx.toFixed(2) + '" y="' + (vy + lay.sizeMm*0.82).toFixed(2) + '" font-size="' + lay.sizeMm.toFixed(2) + '" font-weight="' + (d.bold ? 700 : 400) + '" fill="' + esc(d.color || '#14181c') + '" font-family="' + esc(fontOf(d)) + '"' + strokeAttr + '>' + esc(vch) + '</text>';
+          vy += lay.sizeMm * (1 + (d.letterSpacing||0));
+        }
+      } else for(var li=0; li<lay.lines.length; li++){
+        var ly = ty + li * lay.lhMm;
+        if(ly + lay.sizeMm > pos.y + g.h - 0.8) break;
+        var anchor = d.align === 'center' ? 'middle' : (d.align === 'right' ? 'end' : 'start');
+        var ax = d.align === 'center' ? tx + lay.availW/2 : (d.align === 'right' ? tx + lay.availW : tx);
+        if(d.shadow || d.threeD) tspans += '<text x="' + (ax+0.35).toFixed(2) + '" y="' + (ly + lay.sizeMm*0.82 + 0.35).toFixed(2) + '" font-size="' + lay.sizeMm.toFixed(2) + '" font-weight="' + (d.bold?700:400) + '" fill="rgba(0,0,0,.35)" text-anchor="' + anchor + '" font-family="' + esc(fontOf(d)) + '">' + esc(lay.lines[li]) + '</text>';
+        if(d.threeD) tspans += '<text x="' + (ax+0.18).toFixed(2) + '" y="' + (ly + lay.sizeMm*0.82 + 0.18).toFixed(2) + '" font-size="' + lay.sizeMm.toFixed(2) + '" font-weight="' + (d.bold?700:400) + '" fill="rgba(0,0,0,.2)" text-anchor="' + anchor + '" font-family="' + esc(fontOf(d)) + '">' + esc(lay.lines[li]) + '</text>';
+        tspans += '<text x="' + ax.toFixed(2) + '" y="' + (ly + lay.sizeMm*0.82).toFixed(2) + '" font-size="' + lay.sizeMm.toFixed(2) + '" font-weight="' + (d.bold ? 700 : 400) + '" fill="' + esc(d.color || '#14181c') + '" text-anchor="' + anchor + '" font-family="' + esc(fontOf(d)) + '"' + lsAttr + strokeAttr + '>' + esc(lay.lines[li]) + '</text>';
+      }
+      parts.push(tspans);
+      if(d.img){
+        var ih = d.imgW / (d.imgAspect || 1);
+        parts.push('<image href="' + d.img + '" x="' + (pos.x + g.w - PAD - d.imgW).toFixed(2) + '" y="' + (pos.y + PAD).toFixed(2) + '" width="' + d.imgW + '" height="' + ih.toFixed(2) + '" preserveAspectRatio="xMidYMid meet"/>');
+      }
+      if(d.qr && d.qrText){
+        parts.push(qrSVG(applyTemplate(d.qrText, RENDER_ROW), d.qrSize, pos.x + g.w - PAD - d.qrSize, pos.y + g.h - PAD - d.qrSize));
+      }
+      parts.push(objectsSVG(d, pos.x, pos.y));
+      if(state.mode === 'each' && !hasContent(d)){
+        parts.push('<text x="' + (pos.x + g.w/2) + '" y="' + (pos.y + g.h/2 + 1.2) + '" font-size="3.2" fill="#9db2bd" text-anchor="middle">' + (i+1) + '</text>');
+      }
+    }
+    if(state.testOverlay){
+      parts.push('<text x="' + (pos.x + 1) + '" y="' + (pos.y + 3.4) + '" font-size="2.6" fill="#b3372c" font-family="monospace">#' + (i+1) + '</text>');
+      if(i === 0) parts.push('<text x="' + (pos.x + 1) + '" y="' + (pos.y + 7) + '" font-size="2.6" fill="#b3372c" font-family="monospace">' + fmt(g.w) + ' x ' + fmt(g.h) + ' mm</text>');
+    }
+    parts.push('</g>');
+  }
+  parts.push('</svg>');
+  els.sheetHost.innerHTML = parts.join('');
+  var cells = els.sheetHost.querySelectorAll('.cell');
+  for(var k=0; k<cells.length; k++){
+    cells[k].addEventListener('click', function(){
+      var idx = parseInt(this.getAttribute('data-i'), 10);
+      if(state.mode === 'each'){ state.sel = idx; syncEditor(); renderPreview(); updateVerify(); }
+    });
+  }
+  els.previewSub.textContent = 'A4判 210×297mm ／ ' + g.cols + '列×' + g.rows + '段 ＝ ' + n + '面';
+  els.selInfo.textContent = state.mode === 'each'
+    ? '選択中： ' + (state.sel+1) + '番目の面'
+    : (state.mode === 'csv' ? 'プレビューはCSVの1ページ目です（' + state.csv.rows.length + '行読み込み時）' : '面ごとに編集する場合は、上の「面ごとに編集」に切り替えてください。');
+}
+
+/* ===== 検証パネル ===== */
+function updateVerify(){
+  var g = state.geo, m = margins();
+  var fx = cellXY(0), lx = cellXY(perPage()-1);
+  var okX = m.right >= -0.001, okY = m.bottom >= -0.001;
+  var lines = [];
+  var p = presetById(state.presetId);
+  lines.push('プリセット: ' + p.name + (p.hinban ? '（対応品番 ' + p.hinban + '）' : ''));
+  lines.push('横: 左 ' + fmt(g.ml) + ' + ' + fmt(g.w) + '×' + g.cols + '列 + 間隔 ' + fmt(g.gx) + '×' + (g.cols-1) + ' + 右 ' + fmt(m.right) + ' = ' + fmt(g.ml + g.w*g.cols + g.gx*(g.cols-1) + m.right) + ' mm ' + (okX ? '<span class="ok">OK</span>' : '<span class="bad">右余白がマイナスです</span>'));
+  lines.push('縦: 上 ' + fmt(g.mt) + ' + ' + fmt(g.h) + '×' + g.rows + '段 + 間隔 ' + fmt(g.gy) + '×' + (g.rows-1) + ' + 下 ' + fmt(m.bottom) + ' = ' + fmt(g.mt + g.h*g.rows + g.gy*(g.rows-1) + m.bottom) + ' mm ' + (okY ? '<span class="ok">OK</span>' : '<span class="bad">下余白がマイナスです</span>'));
+  lines.push('PDF用紙: 595.28 × 841.89 pt（A4実寸 210×297mm、1mm = 2.83465pt）');
+  lines.push('先頭ラベル: x=' + fmt(fx.x) + 'mm (' + fmt2(fx.x*MM_PT) + 'pt), y=' + fmt(fx.y) + 'mm (' + fmt2(fx.y*MM_PT) + 'pt), ' + fmt(g.w) + '×' + fmt(g.h) + 'mm');
+  lines.push('最終ラベル: x=' + fmt(lx.x) + 'mm (' + fmt2(lx.x*MM_PT) + 'pt), y=' + fmt(lx.y) + 'mm (' + fmt2(lx.y*MM_PT) + 'pt)');
+  lines.push('位置補正: 左右 ' + (state.ox>=0?'+':'') + fmt(state.ox) + 'mm / 上下 ' + (state.oy>=0?'+':'') + fmt(state.oy) + 'mm（上記の座標に適用済み）');
+  els.verifyBox.innerHTML = lines.join('<br/>');
+  els.presetNote.hidden = !p.note;
+  if(p.note) els.presetNote.textContent = '注意： ' + p.note;
+}
+
+/* ===== エディタ同期 ===== */
+function syncEditor(){
+  var d = editTarget();
+  els.taText.value = d.text;
+  els.inFont.value = d.fontSize;
+  els.fontVal.textContent = d.fontSize + 'pt';
+  els.inColor.value = d.color || '#14181c';
+  els.btnBold.setAttribute('aria-pressed', d.bold ? 'true' : 'false');
+  var aligns = elsSheetAlignBtns();
+  for(var i=0; i<aligns.length; i++) aligns[i].setAttribute('aria-pressed', aligns[i].getAttribute('data-align') === d.align ? 'true' : 'false');
+  els.btnQr.setAttribute('aria-pressed', d.qr ? 'true' : 'false');
+  els.qrBox.hidden = !d.qr;
+  els.inQrText.value = d.qrText || '';
+  els.inQrSize.value = d.qrSize;
+  els.qrSizeVal.textContent = d.qrSize + 'mm';
+  els.imgBox.hidden = !d.img;
+  if(d.img){ els.inImgW.value = d.imgW; els.imgWVal.textContent = d.imgW + 'mm'; }
+  els.editTargetLabel.textContent =
+    state.mode === 'same' ? '対象：全ラベル共通' :
+    state.mode === 'csv' ? '対象：差し込みテンプレート' :
+    '対象：' + (state.sel+1) + '番目の面';
+  els.csvTemplateBox.hidden = state.mode !== 'csv';
+  if(els.inFontFam){ els.inFontFam.value = d.fontFamily || ''; els.inBg.value = d.bg || '#ffffff'; els.inLS.value = d.letterSpacing || 0; els.inLH.value = d.lineHeight || 1.3; els.inStrokeW.value = d.strokeW || 0; els.inStrokeC.value = d.strokeColor || '#ffffff'; els.btnVertical.setAttribute('aria-pressed', d.vertical?'true':'false'); els.btnShadow.setAttribute('aria-pressed', d.shadow?'true':'false'); els.btn3d.setAttribute('aria-pressed', d.threeD?'true':'false'); els.inBorderW.value = d.borderW || 0; els.inBorderC.value = d.borderColor || '#333333'; renderObjList(); }
+}
+function elsSheetAlignBtns(){ return document.querySelectorAll('[data-align]'); }
+
+function setMode(mode){
+  if(mode === 'each'){
+    var allEmpty = state.cells.every(function(c){ return !hasContent(c); });
+    if(allEmpty && hasContent(state.shared)){
+      state.cells = state.cells.map(function(){ return cloneDesign(state.shared); });
+    }
+  }
+  state.mode = mode;
+  els.modeSame.setAttribute('aria-pressed', mode === 'same' ? 'true' : 'false');
+  els.modeEach.setAttribute('aria-pressed', mode === 'each' ? 'true' : 'false');
+  els.modeCsv.setAttribute('aria-pressed', mode === 'csv' ? 'true' : 'false');
+  els.modeHint.textContent =
+    mode === 'same' ? '全てのラベルに同じデザインが入ります。名刺や表示ラベル向き。' :
+    mode === 'each' ? 'プレビューで面を押して選び、その面だけを編集します。数件だけ宛名が違うときに。' :
+    'CSVの各行が1ラベルずつ入ります。宛名リストの一括印刷向き。まず下の「4. CSV差し込み」でファイルを読み込んでください。';
+  els.csvCard.hidden = mode !== 'csv';
+  syncEditor(); renderPreview(); updateVerify(); persist();
+}
+
+/* ===== シート設定UI ===== */
+function fillGeoInputs(){
+  var g = state.geo;
+  els.inCols.value = g.cols; els.inRows.value = g.rows;
+  els.inW.value = g.w; els.inH.value = g.h;
+  els.inML.value = g.ml; els.inMT.value = g.mt;
+  els.inGX.value = g.gx; els.inGY.value = g.gy;
+  els.inOX.value = state.ox; els.inOY.value = state.oy;
+}
+function buildPresetOptions(){
+  els.presetSel.innerHTML = '';
+  PRESETS.forEach(function(p){
+    var o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name + (p.hinban ? '（' + p.hinban + '）' : '');
+    els.presetSel.appendChild(o);
+  });
+  els.presetSel.value = state.presetId;
+}
+els.presetSel.addEventListener('change', function(){
+  var p = presetById(this.value);
+  state.presetId = p.id;
+  if(!p.custom){
+    state.geo = {cols:p.cols, rows:p.rows, w:p.w, h:p.h, ml:p.ml, mt:p.mt, gx:p.gx, gy:p.gy};
+    syncCells(); fillGeoInputs();
+  }
+  renderPreview(); updateVerify(); persist();
+});
+function geoChanged(){
+  var g = state.geo;
+  g.cols = Math.max(1, parseInt(els.inCols.value, 10) || 1);
+  g.rows = Math.max(1, parseInt(els.inRows.value, 10) || 1);
+  g.w = parseFloat(els.inW.value) || 0; g.h = parseFloat(els.inH.value) || 0;
+  g.ml = parseFloat(els.inML.value) || 0; g.mt = parseFloat(els.inMT.value) || 0;
+  g.gx = parseFloat(els.inGX.value) || 0; g.gy = parseFloat(els.inGY.value) || 0;
+  state.presetId = 'custom'; els.presetSel.value = 'custom';
+  syncCells(); renderPreview(); updateVerify(); persist();
+}
+['inCols','inRows','inW','inH','inML','inMT','inGX','inGY'].forEach(function(id){
+  els[id].addEventListener('input', geoChanged);
+});
+els.inOX.addEventListener('input', function(){ state.ox = parseFloat(this.value) || 0; renderPreview(); updateVerify(); persist(); });
+els.inOY.addEventListener('input', function(){ state.oy = parseFloat(this.value) || 0; renderPreview(); updateVerify(); persist(); });
+
+/* ===== モード・デザイン編集UI ===== */
+els.modeSame.addEventListener('click', function(){ setMode('same'); });
+els.modeEach.addEventListener('click', function(){ setMode('each'); });
+els.modeCsv.addEventListener('click', function(){ setMode('csv'); });
+els.taText.addEventListener('input', function(){ editTarget().text = this.value; renderPreview(); persist(); });
+els.inFont.addEventListener('input', function(){
+  editTarget().fontSize = parseFloat(this.value);
+  els.fontVal.textContent = this.value + 'pt';
+  renderPreview(); persist();
+});
+els.inColor.addEventListener('input', function(){ editTarget().color = this.value; renderPreview(); persist(); });
+elsSheetAlignBtns().forEach(function(b){
+  b.addEventListener('click', function(){
+    editTarget().align = this.getAttribute('data-align');
+    syncEditor(); renderPreview(); persist();
+  });
+});
+els.btnBold.addEventListener('click', function(){
+  var d = editTarget(); d.bold = !d.bold; syncEditor(); renderPreview(); persist();
+});
+els.btnQr.addEventListener('click', function(){
+  var d = editTarget(); d.qr = !d.qr; syncEditor(); renderPreview(); persist();
+});
+els.inQrText.addEventListener('input', function(){ editTarget().qrText = this.value; renderPreview(); persist(); });
+els.inQrSize.addEventListener('input', function(){
+  editTarget().qrSize = parseInt(this.value, 10);
+  els.qrSizeVal.textContent = this.value + 'mm';
+  renderPreview(); persist();
+});
+
+/* ===== 画像 ===== */
+var imgCache = {};
+function loadImg(dataURL){
+  if(imgCache[dataURL]) return Promise.resolve(imgCache[dataURL]);
+  return new Promise(function(res, rej){
+    var im = new Image();
+    im.onload = function(){ imgCache[dataURL] = im; res(im); };
+    im.onerror = rej;
+    im.src = dataURL;
+  });
+}
+els.imgFile.addEventListener('change', function(){
+  var f = this.files && this.files[0]; if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var url = String(rd.result);
+    loadImg(url).then(function(im){
+      var d = editTarget();
+      d.img = url; d.imgAspect = im.naturalWidth / Math.max(im.naturalHeight, 1);
+      syncEditor(); renderPreview(); persist();
+      setStatus(els.saveStatus, '画像を配置しました。', 'ok');
+    }).catch(function(){ setStatus(els.saveStatus, '画像を読み込めませんでした。', 'err'); });
+  };
+  rd.readAsDataURL(f);
+  this.value = '';
+});
+els.inImgW.addEventListener('input', function(){
+  editTarget().imgW = parseInt(this.value, 10);
+  els.imgWVal.textContent = this.value + 'mm';
+  renderPreview(); persist();
+});
+els.btnImgDel.addEventListener('click', function(){
+  var d = editTarget(); d.img = null; syncEditor(); renderPreview(); persist();
+});
+
+/* ===== CSV ===== */
+function parseCSV(text){
+  var rows = [], row = [], cur = '', inQ = false;
+  for(var i=0; i<text.length; i++){
+    var ch = text.charAt(i);
+    if(inQ){
+      if(ch === '"'){ if(text.charAt(i+1) === '"'){ cur += '"'; i++; } else inQ = false; }
+      else cur += ch;
+    } else if(ch === '"'){ inQ = true; }
+    else if(ch === ','){ row.push(cur); cur = ''; }
+    else if(ch === '\n'){ row.push(cur); cur = ''; rows.push(row); row = []; }
+    else if(ch !== '\r'){ cur += ch; }
+  }
+  if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(c){ return String(c).trim() !== ''; }); });
+}
+els.csvFile.addEventListener('change', function(){
+  var f = this.files && this.files[0]; if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var buf = rd.result, text;
+    try{ text = new TextDecoder('utf-8', {fatal:true}).decode(buf); }
+    catch(e){ try{ text = new TextDecoder('shift-jis').decode(buf); }catch(e2){ text = new TextDecoder('utf-8').decode(buf); } }
+    var rows = parseCSV(text.replace(/^\uFEFF/, ''));
+    if(rows.length < 2){ els.csvInfo.innerHTML = '<span class="status err">CSVにデータ行がありません（見出し＋1行以上が必要です）。</span>'; return; }
+    var headers = rows[0].map(function(h, i){ return String(h).trim() || ('列' + (i+1)); });
+    var objs = rows.slice(1).map(function(r){
+      var o = {};
+      headers.forEach(function(h, i){ o[h] = r[i] !== undefined ? String(r[i]) : ''; });
+      return o;
+    });
+    state.csv = {headers: headers, rows: objs};
+    var pages = Math.ceil(objs.length / perPage());
+    els.csvInfo.innerHTML = '<span class="status ok">' + objs.length + '行を読み込みました（' + perPage() + '面/シート → PDF ' + pages + 'ページ）。</span>';
+    els.csvChips.innerHTML = '<span class="tiny muted">テンプレートへ挿入：</span><br/>' + headers.map(function(h){ return '<span class="chip" data-h="' + esc(h) + '">{' + esc(h) + '}</span>'; }).join('');
+    var chips = els.csvChips.querySelectorAll('.chip');
+    for(var k=0; k<chips.length; k++){
+      chips[k].addEventListener('click', function(){
+        var ins = '{' + this.getAttribute('data-h') + '}';
+        var ta = els.taText, s = ta.selectionStart || ta.value.length;
+        ta.value = ta.value.slice(0, s) + ins + ta.value.slice(ta.selectionEnd || s);
+        editTarget().text = ta.value;
+        ta.focus(); renderPreview();
+      });
+    }
+    if(!editTarget().text){
+      editTarget().text = headers.map(function(h){ return '{' + h + '}'; }).join('\n');
+      els.taText.value = editTarget().text;
+    }
+    renderPreview(); persist();
+  };
+  rd.readAsArrayBuffer(f);
+  this.value = '';
+});
+
+/* ===== PDF生成 ===== */
+function labelCanvas(d, wMm, hMm){
+  var S = 300/25.4;
+  var c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(wMm * S));
+  c.height = Math.max(1, Math.round(hMm * S));
+  var g = c.getContext('2d');
+  if(d.bg && d.bg !== '#ffffff'){ g.fillStyle = d.bg; g.fillRect(0, 0, c.width, c.height); }
+  var lay = layoutLines(d, wMm);
+  var fontPx = d.fontSize * 300/72, lhPx = fontPx * (d.lineHeight || 1.3);
+  g.font = (d.bold ? '700 ' : '400 ') + fontPx + 'px ' + fontOf(d);
+  g.textBaseline = 'top';
+  function drawLine(txt2, x2, y2){
+    if(d.shadow || d.threeD){ g.fillStyle = 'rgba(0,0,0,.35)'; g.fillText(txt2, x2 + fontPx*0.09, y2 + fontPx*0.09); if(d.threeD){ g.fillStyle = 'rgba(0,0,0,.2)'; g.fillText(txt2, x2 + fontPx*0.05, y2 + fontPx*0.05); } }
+    g.fillStyle = d.color || '#14181c';
+    if(d.strokeW > 0){ g.strokeStyle = d.strokeColor || '#fff'; g.lineWidth = d.strokeW * 300/72; g.strokeText(txt2, x2, y2); }
+    g.fillText(txt2, x2, y2);
+  }
+  if(d.vertical){
+    var vt = String(d.text||'').replace(/\n/g,''), vx2 = c.width - PAD*S - fontPx, vy2 = PAD*S;
+    for(var vj=0; vj<vt.length; vj++){
+      if(vy2 + fontPx > c.height - 2){ vx2 -= lhPx; vy2 = PAD*S; if(vx2 < 0) break; }
+      drawLine(vt.charAt(vj), vx2, vy2);
+      vy2 += fontPx * (1 + (d.letterSpacing||0));
+    }
+  } else for(var li=0; li<lay.lines.length; li++){
+    var y = PAD * S + li * lhPx;
+    if(y + fontPx > c.height - 2) break;
+    var tw = g.measureText(lay.lines[li]).width, x;
+    if(d.align === 'center') x = PAD*S + (lay.availW*S - tw)/2;
+    else if(d.align === 'right') x = PAD*S + (lay.availW*S - tw);
+    else x = PAD*S;
+    if(d.letterSpacing){ var cxp = x; for(var cj=0; cj<lay.lines[li].length; cj++){ drawLine(lay.lines[li].charAt(cj), cxp, y); cxp += g.measureText(lay.lines[li].charAt(cj)).width + fontPx * d.letterSpacing; } }
+    else drawLine(lay.lines[li], x, y);
+  }
+  if(d.img && imgCache[d.img]){
+    var im = imgCache[d.img], iw = d.imgW * S, ih = iw / (d.imgAspect || 1);
+    g.drawImage(im, c.width - PAD*S - iw, PAD*S, iw, ih);
+  }
+  if(d.qr && d.qrText){
+    var qr = makeQR(d.qrText);
+    if(qr){
+      var n = qr.getModuleCount(), total = d.qrSize * S, mod = total / n;
+      var qx = c.width - PAD*S - total, qy = c.height - PAD*S - total;
+      g.fillStyle = '#ffffff'; g.fillRect(qx - 3, qy - 3, total + 6, total + 6);
+      g.fillStyle = '#000000';
+      for(var r=0; r<n; r++) for(var cc=0; cc<n; cc++)
+        if(qr.isDark(r, cc)) g.fillRect(qx + cc*mod, qy + r*mod, Math.ceil(mod), Math.ceil(mod));
+    }
+  }
+  drawObjectsCanvas(g, d, S);
+  if(d.borderW > 0){ g.strokeStyle = d.borderColor || '#333'; g.lineWidth = d.borderW * S; g.strokeRect(g.lineWidth/2, g.lineWidth/2, c.width - g.lineWidth, c.height - g.lineWidth); }
+  return c;
+}
+function collectDesigns(pages){
+  var list = [];
+  for(var p=0; p<pages; p++) for(var i=0; i<perPage(); i++){
+    var d = designFor(i, p); if(d) list.push(d);
+  }
+  return list;
+}
+function pageCount(){
+  if(state.mode === 'csv') return Math.max(1, Math.ceil((state.csv.rows.length + Math.max(0, state.startCell-1)) / perPage()));
+  return Math.max(1, state.copies || 1);
+}
+function genPDF(test){
+  var m = margins();
+  if(m.right < -0.001 || m.bottom < -0.001){
+    setStatus(els.pdfStatus, 'ラベルが用紙からはみ出しています（右余白 ' + fmt(m.right) + 'mm／下余白 ' + fmt(m.bottom) + 'mm）。寸法を見直してください。', 'err');
+    return;
+  }
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    setStatus(els.pdfStatus, 'PDF生成ライブラリを読み込めませんでした。通信環境を確認してページを再読み込みしてください。', 'err');
+    return;
+  }
+  setStatus(els.pdfStatus, 'PDFを作成しています…', '');
+  var pages = state.printRange === 'current' ? 1 : pageCount();
+  var designs = collectDesigns(pages);
+  var jobs = designs.filter(function(d){ return d.img; }).map(function(d){ return loadImg(d.img).catch(function(){}); });
+  Promise.all(jobs).then(function(){ return document.fonts ? document.fonts.ready : null; }).then(function(){
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+    var g = state.geo;
+    for(var p=0; p<pages; p++){
+      if(p > 0) doc.addPage('a4', 'portrait');
+      for(var i=0; i<perPage(); i++){
+        var pos = cellXY(i);
+        if(state.mirror) pos = {x: 210 - pos.x - g.w, y: pos.y, col: pos.col, row: pos.row};
+        if(test){
+          doc.setDrawColor(120, 120, 120); doc.setLineWidth(0.2);
+          doc.rect(pos.x, pos.y, g.w, g.h);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(179, 55, 44);
+          doc.text('#' + (p*perPage()+i+1), pos.x + 1, pos.y + 3.2);
+          if(i === 0){
+            doc.text(fmt(g.w) + ' x ' + fmt(g.h) + ' mm', pos.x + 1, pos.y + 6.4);
+            doc.text('A4 210x297mm / print at 100%', pos.x + 1, pos.y + 9.6);
+          }
+        } else {
+          var globalI = p * perPage() + i;
+          if(p === 0 && state.mode !== 'each' && i < state.startCell - 1) continue;
+          if(state.mode === 'csv' && globalI - (state.startCell - 1) < 0) continue;
+          var d = designFor(i, p);
+          if(state.mode === 'csv'){
+            var rowIdx = globalI - (state.startCell - 1);
+            if(!state.csv.rows[rowIdx]) continue;
+            d = cloneDesign(state.shared);
+            d.text = applyTemplate(state.shared.text, state.csv.rows[rowIdx]);
+            if(d.qr) d.qrText = applyTemplate(state.shared.qrText, state.csv.rows[rowIdx]);
+            RENDER_ROW = state.csv.rows[rowIdx];
+          } else RENDER_ROW = null;
+          if(!hasContent(d)) continue;
+          RENDER_IDX = globalI - (state.startCell - 1);
+          var cv = labelCanvas(d, g.w, g.h);
+          doc.addImage(cv.toDataURL('image/png'), 'PNG', pos.x, pos.y, g.w, g.h);
+        }
+      }
+    }
+    var p2 = presetById(state.presetId);
+    doc.save((test ? 'テスト印刷_' : 'ラベル_') + (p2.hinban ? p2.name.replace(/[^\x20-\x7E\u3000-\u30FF\u4E00-\u9FFF]/g,'') : 'sheet') + '.pdf');
+    setStatus(els.pdfStatus, (test ? 'テスト印刷用' : '') + 'PDFを作成しました（' + pages + 'ページ）。普通紙に印刷してラベル紙に重ね、位置を確認してください。', 'ok');
+  }).catch(function(e){
+    setStatus(els.pdfStatus, 'PDF作成に失敗しました： ' + (e && e.message ? e.message : e), 'err');
+  });
+}
+els.btnPdf.addEventListener('click', function(){ genPDF(false); });
+els.btnTestPdf.addEventListener('click', function(){ genPDF(true); });
+els.btnTestOverlay.addEventListener('click', function(){
+  state.testOverlay = !state.testOverlay;
+  this.setAttribute('aria-pressed', state.testOverlay ? 'true' : 'false');
+  renderPreview();
+});
+
+/* ===== 保存・JSON ===== */
+var LS_AUTO = 'labeltool.v1.autosave', LS_SAVES = 'labeltool.v1.saves';
+function serialize(){
+  return {
+    v:2, presetId:state.presetId, geo:state.geo, ox:state.ox, oy:state.oy,
+    mode:state.mode, shared:state.shared, cells:state.cells, sel:state.sel,
+    csvHeaders:state.csv.headers, csvRows:state.csv.rows, startCell:state.startCell, copies:state.copies
+  };
+}
+function applyData(data){
+  if(!data || typeof data !== 'object') throw new Error('形式が違います');
+  state.presetId = data.presetId || 'custom';
+  if(data.geo) state.geo = data.geo;
+  state.ox = data.ox || 0; state.oy = data.oy || 0;
+  state.shared = Object.assign(emptyDesign(), data.shared || {});
+  state.cells = (data.cells || []).map(function(c){ return Object.assign(emptyDesign(), c); });
+  state.sel = data.sel || 0;
+  state.csv = {headers: data.csvHeaders || [], rows: data.csvRows || []};
+  state.startCell = data.startCell || 1; state.copies = data.copies || 1;
+  if(els.inStartCell) els.inStartCell.value = state.startCell;
+  if(els.inCopies) els.inCopies.value = state.copies;
+  state.shared = Object.assign(emptyDesign(), state.shared); state.shared.objects = state.shared.objects || [];
+  state.cells = state.cells.map(function(c){ var n = Object.assign(emptyDesign(), c); n.objects = n.objects || []; return n; });
+  syncCells();
+  buildPresetOptions(); fillGeoInputs();
+  setMode(['same','each','csv'].indexOf(data.mode) >= 0 ? data.mode : 'same');
+  if(state.csv.rows.length){
+    var pages = Math.ceil(state.csv.rows.length / perPage());
+    els.csvInfo.innerHTML = '<span class="status ok">保存データからCSV ' + state.csv.rows.length + '行を復元しました（PDF ' + pages + 'ページ）。</span>';
+  }
+}
+var persistWarned = false;
+function persist(){
+  try{ localStorage.setItem(LS_AUTO, JSON.stringify(serialize())); }
+  catch(e){
+    if(!persistWarned){ persistWarned = true; setStatus(els.saveStatus, 'ブラウザ内保存に失敗しました（容量超過の可能性）。JSONで書き出して保管してください。', 'err'); }
+  }
+}
+function loadSaves(){
+  try{ return JSON.parse(localStorage.getItem(LS_SAVES) || '{}'); }catch(e){ return {}; }
+}
+function renderSaveList(){
+  var saves = loadSaves(), names = Object.keys(saves);
+  if(!names.length){ els.saveList.innerHTML = '<p class="tiny muted">保存済みデザインはまだありません。</p>'; return; }
+  els.saveList.innerHTML = '';
+  names.forEach(function(name){
+    var row = document.createElement('div'); row.className = 'saveli';
+    var label = document.createElement('span'); label.className = 'grow'; label.textContent = name;
+    var bLoad = document.createElement('button'); bLoad.type = 'button'; bLoad.className = 'small'; bLoad.textContent = '読み込む';
+    bLoad.addEventListener('click', function(){
+      try{ applyData(loadSaves()[name]); setStatus(els.saveStatus, '「' + name + '」を読み込みました。', 'ok'); }
+      catch(e){ setStatus(els.saveStatus, '読み込みに失敗しました。', 'err'); }
+    });
+    var bDel = document.createElement('button'); bDel.type = 'button'; bDel.className = 'small danger'; bDel.textContent = '削除';
+    bDel.addEventListener('click', function(){
+      var s = loadSaves(); delete s[name];
+      try{ localStorage.setItem(LS_SAVES, JSON.stringify(s)); }catch(e){}
+      renderSaveList(); setStatus(els.saveStatus, '「' + name + '」を削除しました。', 'ok');
+    });
+    row.appendChild(label); row.appendChild(bLoad); row.appendChild(bDel);
+    els.saveList.appendChild(row);
+  });
+}
+els.btnSave.addEventListener('click', function(){
+  var name = els.saveName.value.trim();
+  if(!name){ setStatus(els.saveStatus, 'デザイン名を入力してください。', 'err'); els.saveName.focus(); return; }
+  var s = loadSaves(); s[name] = serialize();
+  try{
+    localStorage.setItem(LS_SAVES, JSON.stringify(s));
+    setStatus(els.saveStatus, '「' + name + '」を保存しました。', 'ok');
+    renderSaveList();
+  }catch(e){
+    setStatus(els.saveStatus, '保存に失敗しました（容量超過の可能性）。JSONで書き出してください。', 'err');
+  }
+});
+els.btnExport.addEventListener('click', function(){
+  var name = (els.saveName.value.trim() || 'ラベルデザイン') + '.json';
+  var blob = new Blob([JSON.stringify(serialize(), null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  setStatus(els.saveStatus, 'JSONを書き出しました： ' + name, 'ok');
+});
+els.importFile.addEventListener('change', function(){
+  var f = this.files && this.files[0]; if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{ applyData(JSON.parse(String(rd.result))); setStatus(els.saveStatus, 'JSONを読み込みました。', 'ok'); }
+    catch(e){ setStatus(els.saveStatus, 'JSONの読み込みに失敗しました： ' + e.message, 'err'); }
+  };
+  rd.readAsText(f);
+  this.value = '';
+});
+els.btnReset.addEventListener('click', function(){
+  state.shared = emptyDesign(); state.cells = []; state.sel = 0;
+  state.csv = {headers:[], rows:[]}; els.csvInfo.innerHTML = ''; els.csvChips.innerHTML = '';
+  syncCells(); setMode('same');
+  setStatus(els.saveStatus, '内容を消去しました（シート設定は変更していません）。', 'ok');
+});
+
+/* ===== .aly 実験的取り込み ===== */
+function extractStrings(t){
+  var m = String(t).match(/[\u0020-\u007E\u00A0-\u00FF\u3000-\u30FF\u3400-\u9FFF\uF900-\uFAFF\uFF01-\uFF65]{2,}/g) || [];
+  var seen = {}, out = [];
+  m.forEach(function(s){
+    s = s.replace(/\s+/g, ' ').trim();
+    if(s.length < 2) return;
+    if(!/[\u3040-\u30FF\u3400-\u9FFF\w]/.test(s)) return;
+    if(/^(true|false|null|xml|version|encoding|utf-8|shift_jis)$/i.test(s)) return;
+    if(/^[0-9a-f]{16,}$/i.test(s)) return;
+    if(seen[s]) return; seen[s] = 1; out.push(s);
+  });
+  return out;
+}
+function extractFromText(txt){
+  var out = [];
+  if(txt.indexOf('<') >= 0 && window.DOMParser){
+    try{
+      var doc = new DOMParser().parseFromString(txt, 'text/xml');
+      var all = doc.getElementsByTagName('*');
+      for(var ei=0; ei<all.length; ei++){
+        var el = all[ei], direct = '';
+        for(var cn=0; cn<el.childNodes.length; cn++) if(el.childNodes[cn].nodeType===3) direct += el.childNodes[cn].nodeValue;
+        direct = direct.replace(/\s+/g,' ').trim();
+        function attrNum(names){ for(var ni=0; ni<names.length; ni++){ var av = el.getAttribute && (el.getAttribute(names[ni]) || el.getAttribute(names[ni].toLowerCase())); if(av && !isNaN(parseFloat(av))) return parseFloat(av); } return null; }
+        var xv = attrNum(['x','X','left','Left']), yv = attrNum(['y','Y','top','Top']), wv = attrNum(['width','Width','w']), hv = attrNum(['height','Height','h']), fv = attrNum(['fontSize','FontSize','size','Size']);
+        if(direct.length >= 2){
+          out.push(direct);
+          if(xv !== null || yv !== null){ window.__alyPositioned = window.__alyPositioned || []; window.__alyPositioned.push({text:direct, x:xv||0, y:yv||0, w:wv||40, h:hv||8, fontSize:fv||11}); }
+        }
+      }
+      var walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+      var node;
+      while((node = walker.nextNode())){
+        var v = node.nodeValue.replace(/\s+/g, ' ').trim();
+        if(v.length >= 2 && out.indexOf(v) < 0) out.push(v);
+      }
+    }catch(e){}
+    if(out.length) return out;
+    return extractStrings(txt.replace(/<[^>]+>/g, ' '));
+  }
+  return extractStrings(txt);
+}
+function alyCheckedStrings(){
+  var boxes = els.alyCandList.querySelectorAll('.alyCand');
+  var all = els.alyText.value.split('\n');
+  var picked = [];
+  boxes.forEach(function(b){ if(b.checked) picked.push(all[parseInt(b.value,10)]); });
+  return picked.filter(function(s){ return s && s.trim() !== ''; });
+}
+els.btnAlyCandText.addEventListener('click', function(){ var p = alyCheckedStrings(); if(p.length) els.alyText.value = p.join('\n'); });
+els.btnAlyCandFill.addEventListener('click', function(){
+  var lines = alyCheckedStrings();
+  if(!lines.length){ setStatus(els.alyStatus, 'チェックされた候補がありません。', 'err'); return; }
+  setMode('each');
+  for(var i=0; i<state.cells.length; i++){ var d = cloneDesign(state.shared); d.text = lines[i] || ''; d.img = null; d.objects = []; state.cells[i] = d; }
+  state.sel = 0; syncEditor(); renderPreview(); persist();
+  setStatus(els.alyStatus, lines.length + '件の候補を各面に流し込みました。', 'ok');
+});
+els.alyFile.addEventListener('change', function(){
+  var f = this.files && this.files[0]; if(!f) return;
+  window.__alyPositioned = [];
+  setStatus(els.alyStatus, '読み込み中…', '');
+  els.alyResult.hidden = true;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var buf = rd.result, u8 = new Uint8Array(buf), strings = [], method = '';
+    var positioned = window.__alyPositioned || [];
+    function finish(){
+      strings = extractStrings(strings.join('\n')).slice(0, 300);
+      els.alyReport.hidden = false;
+      els.alyReport.innerHTML = '取り込みレポート<br/>方式: ' + esc(method || '可読文字列抽出') + '<br/>抽出できた文字列: ' + strings.length + '件／位置付き要素: ' + positioned.length + '件<br/>再現できないもの: 画像・図形・バーコード・フォント書式・色・正確な座標（仕様非公開のため）。実物サンプルがあれば精度を上げられます。';
+      if(!strings.length && !positioned.length){
+        setStatus(els.alyStatus, '文字列を抽出できませんでした。この .aly はバイナリ形式で保存されているため、文字を取り出せません。ラベル屋さん側でファイルを開き、PDFに書き出すか、文字をコピーして貼り付けてください。', 'err');
+        return;
+      }
+      if(positioned.length){
+        var d0 = editTarget(); positioned.slice(0, 40).forEach(function(pz){ var o = newObj('text'); o.text = pz.text; o.x = Math.min(Math.max(pz.x || 3, 0), Math.max(state.geo.w - 10, 1)); o.y = Math.min(Math.max(pz.y || 3, 0), Math.max(state.geo.h - 6, 1)); o.w = Math.min(pz.w || 40, state.geo.w); o.h = Math.max(pz.h || 8, 6); if(pz.fontSize) o.fontSize = Math.min(Math.max(pz.fontSize, 5), 36); d0.objects.push(o); });
+        setStatus(els.saveStatus, '位置付きテキスト ' + positioned.length + '件をオブジェクトとして再配置しました（座標は推定です）。', 'ok');
+      }
+      els.alyText.value = strings.join('\n');
+      els.alyResult.hidden = false;
+      els.alyCandidates.hidden = false;
+      els.alyCandList.innerHTML = strings.map(function(s, idx){ return '<label style="display:block; padding:2px 0;"><input type="checkbox" class="alyCand" value="' + idx + '" checked /> ' + esc(s) + '</label>'; }).join('');
+      setStatus(els.alyStatus, strings.length + '件の文字列を抽出しました（' + method + '）。レイアウト・書式には復元できない要素があります。候補にチェックを付けて流し込むか、下の欄を編集してください。', 'ok');
+      renderPreview(); persist();
+    }
+    if(u8[0] === 0x50 && u8[1] === 0x4B && window.JSZip){
+      JSZip.loadAsync(buf).then(function(zip){
+        var names = Object.keys(zip.files).filter(function(n){ return !zip.files[n].dir; });
+        var chain = Promise.resolve();
+        names.forEach(function(n){
+          chain = chain.then(function(){
+            return zip.files[n].async('string').then(function(txt){
+              strings = strings.concat(extractFromText(txt));
+            }).catch(function(){});
+          });
+        });
+        chain.then(function(){ method = 'ZIPとして開き、中のXML/テキストから抽出'; finish(); });
+      }).catch(function(){
+        method = 'ZIPとして開けなかったため、ファイル内の可読文字列を抽出';
+        finishBinary();
+      });
+    } else finishBinary();
+    function finishBinary(){
+      if(!method) method = 'ファイル内の可読文字列を抽出';
+      [ 'utf-16le', 'shift-jis', 'utf-8' ].forEach(function(enc){
+        try{ strings = strings.concat(extractStrings(new TextDecoder(enc).decode(buf))); }catch(e){}
+      });
+      finish();
+    }
+  };
+  rd.onerror = function(){ setStatus(els.alyStatus, 'ファイルの読み込みに失敗しました。', 'err'); };
+  rd.readAsArrayBuffer(f);
+  this.value = '';
+});
+els.btnAlyFill.addEventListener('click', function(){
+  var lines = els.alyText.value.split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s !== ''; });
+  if(!lines.length){ setStatus(els.alyStatus, '流し込む文字列がありません。', 'err'); return; }
+  setMode('each');
+  for(var i=0; i<state.cells.length; i++){
+    var d = cloneDesign(state.shared);
+    d.text = lines[i] || '';
+    d.img = null;
+    state.cells[i] = d;
+  }
+  state.sel = 0;
+  syncEditor(); renderPreview(); persist();
+  setStatus(els.alyStatus, lines.length + '件を各面に流し込みました（シートは ' + perPage() + '面）。プレビューで確認してください。', 'ok');
+});
+
+/* ===== バーコード（独自実装） ===== */
+function jan13(code){
+  var s = String(code||'').replace(/\D/g,'');
+  if(s.length === 13) s = s.slice(0,12);
+  if(s.length !== 12) return null;
+  var sum = 0; for(var i=0;i<12;i++){ var dg = +s.charAt(11-i); sum += (i%2===0) ? dg*3 : dg; }
+  var full = s + String((10 - (sum % 10)) % 10);
+  var L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+  var G=['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+  var R=['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+  var parity={'0':'LLLLLL','1':'LLGLGG','2':'LLGGLG','3':'LLGGGL','4':'LGLLGG','5':'LGGLLG','6':'LGGGLL','7':'LGLGLG','8':'LGLGGL','9':'LGGLGL'};
+  var bits = '101', p = parity[full.charAt(0)];
+  for(var a=0;a<6;a++){ var dgt=+full.charAt(1+a); bits += (p.charAt(a)==='L'?L[dgt]:G[dgt]); }
+  bits += '01010';
+  for(var b=0;b<6;b++) bits += R[+full.charAt(7+b)];
+  bits += '101';
+  return {code:full, bits:bits};
+}
+var C39 = {'0':'000110100','1':'100100001','2':'001100001','3':'101100000','4':'000110001','5':'100110000','6':'001110000','7':'000100101','8':'100100100','9':'001100100','A':'100001001','B':'001001001','C':'101001000','D':'000011001','E':'100011000','F':'001011000','G':'000001101','H':'100001100','I':'001001100','J':'000011100','K':'100000011','L':'001000011','M':'101000010','N':'000010011','O':'100010010','P':'001010010','Q':'000000111','R':'100000110','S':'001000110','T':'000010110','U':'110000001','V':'011000001','W':'111000000','X':'010010001','Y':'110010000','Z':'011010000','-':'010000101','.':'110000100',' ':'011000100','$':'010101000','/':'010100010','+':'010001010','%':'000101010','*':'010010100'};
+function code39(code){
+  var s = ('*' + String(code||'').toUpperCase() + '*'), bits = '';
+  for(var i=0;i<s.length;i++){ var pat = C39[s.charAt(i)]; if(!pat) return null; if(i) bits += '0'; bits += pat; }
+  var out = ''; for(var j=0;j<bits.length;j++) out += bits.charAt(j)==='1' ? '111' : '1';
+  return out;
+}
+var C128B = [212222,222122,222221,121223,121322,131222,122213,122312,132212,221213,221312,231212,112232,122132,122231,113222,123122,123221,223211,221132,221231,213212,223112,312131,311222,321122,321221,312212,322112,322211,212123,212321,232121,111323,131123,131321,112313,132113,132311,211313,231113,231311,112133,112331,132131,113123,113321,133121,313121,211331,231131,213113,213311,213131,311123,311321,331121,312113,312311,332111,314111,221411,431111,111224,111422,121124,121421,141122,141221,112214,112412,122114,122411,142112,142211,241211,221114,413111,241112,134111,111242,121142,121241,114212,124112,124211,411212,421112,421211,212141,214121,412121,111143,111341,131141,114113,114311,411113,411311,113141,114131,141111,141311,411131,211412,211214,211232,2331112];
+function code128(code){
+  var s = String(code||''); if(!s) return null;
+  var vals = [104]; var chk = 104;
+  for(var i=0;i<s.length;i++){ var v = s.charCodeAt(i) - 32; if(v < 0 || v > 94) return null; vals.push(v); chk += v * (i+1); }
+  vals.push(chk % 103); vals.push(106);
+  var out = '';
+  vals.forEach(function(v){ var pat = String(C128B[v]); for(var k=0;k<pat.length;k++){ var len = +pat.charAt(k); out += (k%2===0 ? '1' : '0').repeat(len); } });
+  return out;
+}
+function barcodeBits(o){
+  if(o.type==='barcode-jan' || o.type==='isbn'){ var j = jan13(applyTemplate(o.text, RENDER_ROW)); return j ? {bits:j.bits, label:j.code} : null; }
+  if(o.type==='barcode-39'){ var b = code39(applyTemplate(o.text, RENDER_ROW)); return b ? {bits:b, label:String(o.text||'').toUpperCase()} : null; }
+  if(o.type==='barcode-128'){ var b2 = code128(applyTemplate(o.text, RENDER_ROW)); return b2 ? {bits:b2, label:String(o.text||'')} : null; }
+  return null;
+}
+/* ===== bwip-js（優先）／独自実装フォールバック ===== */
+var BWIP_BCID = {'barcode-jan':'ean13','barcode-ean8':'ean8','barcode-upca':'upca','barcode-upce':'upce','barcode-39':'code39','barcode-128':'code128','barcode-itf':'interleaved2of5','barcode-itf14':'itf14','barcode-codabar':'rationalizedCodabar','isbn':'isbn'};
+function isBarcodeObj(o){ return !!(o && BWIP_BCID[o.type]); }
+function bwipLib(){ return (window.bwipjs && (window.bwipjs.toCanvas || window.bwipjs.toSVG)) ? window.bwipjs : null; }
+var bwipFallbackNoted = false;
+function noteBwipFallback(){
+  if(bwipFallbackNoted) return; bwipFallbackNoted = true;
+  var st = document.getElementById('bwipStatus'), ok = document.getElementById('bwipOk');
+  if(st) st.hidden = false; if(ok) ok.hidden = true;
+}
+function bwipNormalize(bcid, raw){
+  var t = String(raw == null ? '' : raw).trim();
+  if(bcid==='ean13'||bcid==='ean8'||bcid==='upca'||bcid==='upce'||bcid==='itf14'||bcid==='interleaved2of5') t = t.replace(/[^0-9]/g,'');
+  if(bcid==='interleaved2of5' && t.length % 2 === 1) t = '0' + t;
+  if(bcid==='rationalizedCodabar' && t){ if(!/^[A-Da-d]/.test(t)) t = 'A' + t; if(!/[A-Da-d]$/.test(t)) t = t + 'A'; }
+  if(bcid==='code39') t = t.toUpperCase();
+  return t;
+}
+var bwipCache = {};
+/* 成功時は canvas、失敗時は null を返す。ライブラリ未読込のときだけフォールバック表示を出す */
+function bwipRenderCanvas(o, hiRes){
+  var lib = bwipLib();
+  if(!lib || !lib.toCanvas){ noteBwipFallback(); return null; }
+  var bcid = BWIP_BCID[o.type]; if(!bcid) return null;
+  var text = bwipNormalize(bcid, applyTemplate(o.text, RENDER_ROW));
+  if(!text) return null;
+  var scale = hiRes ? 8 : 4;
+  var key = bcid + '|' + text + '|' + scale;
+  if(key in bwipCache) return bwipCache[key];
+  try{
+    var cv = document.createElement('canvas');
+    lib.toCanvas(cv, {bcid:bcid, text:text, scale:scale, includetext:true, textxalign:'center', backgroundcolor:'FFFFFF', paddingwidth:6, paddingheight:4});
+    if(!cv.width || !cv.height){ bwipCache[key] = null; return null; }
+    bwipCache[key] = cv;
+    return cv;
+  }catch(e){ bwipCache[key] = null; return null; }
+}
+function bwipDataURL(o){
+  var cv = bwipRenderCanvas(o, false);
+  if(!cv) return null;
+  try{ return cv.toDataURL('image/png'); }catch(e){ return null; }
+}
+function fmtDate(fmtStr){
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth()+1, dd = now.getDate();
+  return String(fmtStr||'yyyy/MM/dd').replace('yyyy', y).replace('yy', String(y).slice(2)).replace('MM', String(m).padStart(2,'0')).replace('M', m).replace('dd', String(dd).padStart(2,'0')).replace('d', dd);
+}
+function serialText(o){
+  var n = (o.serStart||1) + (o.serStep||1) * RENDER_IDX;
+  var s = String(Math.abs(n)).padStart(o.serDigits||1, '0'); if(n < 0) s = '-' + s;
+  return (o.serPrefix||'') + s;
+}
+function calendarLines(o){
+  var ym = o.yearMonth || ''; var mm2 = ym.match(/(\d{4})[-/](\d{1,2})/);
+  var now = new Date(); var Y = mm2 ? +mm2[1] : now.getFullYear(), M = mm2 ? +mm2[2] : now.getMonth()+1;
+  var first = new Date(Y, M-1, 1).getDay(), days = new Date(Y, M, 0).getDate();
+  var lines = [Y + '年' + M + '月', '日 月 火 水 木 金 土'];
+  var row = []; for(var e=0;e<first;e++) row.push('  ');
+  for(var dnum=1; dnum<=days; dnum++){ row.push(String(dnum).padStart(2,' ')); if(row.length===7){ lines.push(row.join(' ')); row=[]; } }
+  if(row.length) lines.push(row.join(' '));
+  return lines;
+}
+function objTextLines(o){
+  if(o.type==='date') return [fmtDate(o.fmt)];
+  if(o.type==='serial') return [serialText(o)];
+  if(o.type==='calendar') return calendarLines(o);
+  if(o.type==='table'){
+    var rows = String(applyTemplate(o.text, RENDER_ROW)||'').split('\n').slice(0, o.rows||2);
+    return rows.map(function(r){ return r.split(',').slice(0, o.cols||2).join(' │ '); });
+  }
+  return String(applyTemplate(o.text, RENDER_ROW)||'').split('\n');
+}
+function polyPoints(kind, x, y, w, h){
+  var cx = x+w/2, cy = y+h/2, pts = [];
+  if(kind==='triangle') pts = [[cx,y],[x+w,y+h],[x,y+h]];
+  else if(kind==='pentagon'||kind==='hexagon'){ var n2 = kind==='pentagon'?5:6; for(var i2=0;i2<n2;i2++){ var a = -Math.PI/2 + i2*2*Math.PI/n2; pts.push([cx + Math.cos(a)*w/2, cy + Math.sin(a)*h/2]); } }
+  else if(kind==='star'){ for(var j=0;j<10;j++){ var a2 = -Math.PI/2 + j*Math.PI/5, r = j%2===0 ? 1 : 0.45; pts.push([cx + Math.cos(a2)*w/2*r, cy + Math.sin(a2)*h/2*r]); } }
+  else if(kind==='arrow') pts = [[x,y+h*0.3],[x+w*0.6,y+h*0.3],[x+w*0.6,y],[x+w,cy],[x+w*0.6,y+h],[x+w*0.6,y+h*0.7],[x,y+h*0.7]];
+  return pts.map(function(p){ return p[0].toFixed(2)+','+p[1].toFixed(2); }).join(' ');
+}
+var SHAPE_TYPES = ['rect','circle','triangle','pentagon','hexagon','star','arrow','line','line-arrow','curve'];
+function objectsSVG(d, ox, oy){
+  if(!d.objects || !d.objects.length) return '';
+  var out = '';
+  d.objects.forEach(function(o){
+    var x = ox + o.x, y = oy + o.y;
+    var rot = o.angle ? ' transform="rotate(' + o.angle + ' ' + (x+o.w/2) + ' ' + (y+o.h/2) + ')"' : '';
+    out += '<g' + rot + '>';
+    if(o.type==='rect') out += '<rect x="'+x+'" y="'+y+'" width="'+o.w+'" height="'+o.h+'" fill="'+esc(o.fill)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.3"/>';
+    else if(o.type==='circle') out += '<ellipse cx="'+(x+o.w/2)+'" cy="'+(y+o.h/2)+'" rx="'+(o.w/2)+'" ry="'+(o.h/2)+'" fill="'+esc(o.fill)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.3"/>';
+    else if(['triangle','pentagon','hexagon','star','arrow'].indexOf(o.type)>=0) out += '<polygon points="'+polyPoints(o.type,x,y,o.w,o.h)+'" fill="'+esc(o.fill)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.3"/>';
+    else if(o.type==='line'||o.type==='line-arrow') out += '<line x1="'+x+'" y1="'+(y+o.h/2)+'" x2="'+(x+o.w)+'" y2="'+(y+o.h/2)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.5"/>' + (o.type==='line-arrow' ? '<polygon points="'+(x+o.w)+','+(y+o.h/2)+' '+(x+o.w-2.5)+','+(y+o.h/2-1.4)+' '+(x+o.w-2.5)+','+(y+o.h/2+1.4)+'" fill="'+esc(o.stroke)+'"/>' : '');
+    else if(o.type==='curve') out += '<path d="M'+x+' '+(y+o.h)+' Q '+(x+o.w/2)+' '+(y-o.h*0.4)+' '+(x+o.w)+' '+(y+o.h*0.2)+'" fill="none" stroke="'+esc(o.stroke)+'" stroke-width="0.5"/>';
+    else if(isBarcodeObj(o)){
+      var burl = bwipDataURL(o);
+      if(burl){ out += '<rect x="'+x+'" y="'+y+'" width="'+o.w+'" height="'+o.h+'" fill="#fff"/><image href="' + burl + '" x="'+x+'" y="'+y+'" width="'+o.w+'" height="'+o.h+'" preserveAspectRatio="none"/>'; }
+      else {
+        var bc = barcodeBits(o);
+        if(bc){ var mw = o.w / bc.bits.length, bx = ''; for(var bi=0;bi<bc.bits.length;bi++) if(bc.bits.charAt(bi)==='1') bx += '<rect x="'+(x+bi*mw).toFixed(2)+'" y="'+y+'" width="'+mw.toFixed(2)+'" height="'+(o.h-3)+'" fill="#000"/>'; out += '<rect x="'+x+'" y="'+y+'" width="'+o.w+'" height="'+o.h+'" fill="#fff"/>' + bx + '<text x="'+(x+o.w/2)+'" y="'+(y+o.h-0.6)+'" font-size="2.6" text-anchor="middle" font-family="monospace" fill="#000">' + esc(bc.label) + '</text>'; }
+        else out += '<text x="'+x+'" y="'+(y+3)+'" font-size="2.6" fill="#b3372c">コード値を確認してください</text>';
+      }
+    }
+    else if(o.type==='circular'){
+      var txt = applyTemplate(o.text, RENDER_ROW) || '', r = Math.min(o.w,o.h)/2 - 1.5, cx2 = x+o.w/2, cy2 = y+o.h/2, fs = o.fontSize*25.4/72;
+      for(var ci=0; ci<txt.length; ci++){ var ang = (ci / Math.max(txt.length,1)) * Math.PI * 2; out += '<text x="'+(cx2 + Math.cos(ang - Math.PI/2)*r).toFixed(2)+'" y="'+(cy2 + Math.sin(ang - Math.PI/2)*r + fs*0.35).toFixed(2)+'" font-size="'+fs.toFixed(2)+'" fill="'+esc(o.stroke)+'" text-anchor="middle" transform="rotate('+((ang*180/Math.PI)+90).toFixed(1)+' '+(cx2 + Math.cos(ang - Math.PI/2)*r).toFixed(2)+' '+(cy2 + Math.sin(ang - Math.PI/2)*r).toFixed(2)+')">' + esc(txt.charAt(ci)) + '</text>'; }
+    }
+    else if(o.type==='table'){
+      var lines2 = objTextLines(o), rh = o.h / Math.max(o.rows||2,1);
+      out += '<rect x="'+x+'" y="'+y+'" width="'+o.w+'" height="'+o.h+'" fill="none" stroke="'+esc(o.stroke)+'" stroke-width="0.3"/>';
+      for(var ti=1; ti<(o.rows||2); ti++) out += '<line x1="'+x+'" y1="'+(y+rh*ti)+'" x2="'+(x+o.w)+'" y2="'+(y+rh*ti)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.2"/>';
+      var cw = o.w / Math.max(o.cols||2,1);
+      for(var tj=1; tj<(o.cols||2); tj++) out += '<line x1="'+(x+cw*tj)+'" y1="'+y+'" x2="'+(x+cw*tj)+'" y2="'+(y+o.h)+'" stroke="'+esc(o.stroke)+'" stroke-width="0.2"/>';
+      lines2.forEach(function(ln, li2){ var cells = ln.split(' │ '); cells.forEach(function(cell, cj2){ out += '<text x="'+(x + cw*cj2 + 1)+'" y="'+(y + rh*li2 + (o.fontSize*25.4/72)*0.9 + 0.6)+'" font-size="'+(o.fontSize*25.4/72).toFixed(2)+'" fill="'+esc(o.stroke)+'">' + esc(cell) + '</text>'; }); });
+    }
+    else {
+      var ls3 = objTextLines(o), fs3 = o.fontSize*25.4/72;
+      ls3.forEach(function(ln2, li3){ out += '<text x="'+x+'" y="'+(y + fs3*(li3+0.9))+'" font-size="'+fs3.toFixed(2)+'" fill="'+esc(o.stroke)+'" font-family="' + (o.type==='calendar' ? 'monospace' : 'inherit') + '">' + esc(ln2) + '</text>'; });
+    }
+    out += '</g>';
+  });
+  return out;
+}
+function drawObjectsCanvas(g, d, S){
+  if(!d.objects) return;
+  d.objects.forEach(function(o){
+    var x = o.x*S, y = o.y*S, w = o.w*S, h = o.h*S;
+    g.save();
+    if(o.angle){ g.translate(x+w/2, y+h/2); g.rotate(o.angle*Math.PI/180); g.translate(-(x+w/2), -(y+h/2)); }
+    g.fillStyle = o.fill; g.strokeStyle = o.stroke; g.lineWidth = Math.max(1, 0.3*S);
+    function poly(kind){ var pts = polyPoints(kind, o.x, o.y, o.w, o.h); var arr = pts.split(' ').map(function(p){ return p.split(',').map(Number); }); g.beginPath(); arr.forEach(function(p, idx){ if(idx===0) g.moveTo(p[0]*S, p[1]*S); else g.lineTo(p[0]*S, p[1]*S); }); g.closePath(); g.fill(); g.stroke(); }
+    if(o.type==='rect'){ g.fillRect(x,y,w,h); g.strokeRect(x,y,w,h); }
+    else if(o.type==='circle'){ g.beginPath(); g.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2); g.fill(); g.stroke(); }
+    else if(['triangle','pentagon','hexagon','star','arrow'].indexOf(o.type)>=0) poly(o.type);
+    else if(o.type==='line'||o.type==='line-arrow'){ g.beginPath(); g.moveTo(x, y+h/2); g.lineTo(x+w, y+h/2); g.stroke(); if(o.type==='line-arrow'){ g.beginPath(); g.moveTo(x+w, y+h/2); g.lineTo(x+w-2.5*S/ (300/25.4) * (300/25.4) / S * S, y+h/2); g.fillStyle=o.stroke; g.beginPath(); g.moveTo(x+w, y+h/2); g.lineTo(x+w-7*S/3, y+h/2-4*S/3); g.lineTo(x+w-7*S/3, y+h/2+4*S/3); g.closePath(); g.fill(); } }
+    else if(o.type==='curve'){ g.beginPath(); g.moveTo(x, y+h); g.quadraticCurveTo(x+w/2, y-h*0.4, x+w, y+h*0.2); g.stroke(); }
+    else if(isBarcodeObj(o)){
+      g.fillStyle = '#fff'; g.fillRect(x,y,w,h);
+      var bcv = bwipRenderCanvas(o, true);
+      if(bcv){ try{ g.drawImage(bcv, x, y, w, h); }catch(e2){ bcv = null; } }
+      if(!bcv){
+        var bc = barcodeBits(o);
+        if(bc){ g.fillStyle = '#000'; var mw = w / bc.bits.length; for(var bi=0;bi<bc.bits.length;bi++) if(bc.bits.charAt(bi)==='1') g.fillRect(x+bi*mw, y, Math.max(mw,1), h - 3*S); g.font = (2.6*S) + 'px monospace'; g.textAlign='center'; g.fillText(bc.label, x+w/2, y+h-2.4*S); g.textAlign='left'; }
+        else { g.fillStyle = '#b3372c'; g.font = (2.6*S) + 'px sans-serif'; g.fillText('コード値を確認してください', x, y + 3*S); }
+      }
+    }
+    else if(o.type==='circular'){
+      var txt = applyTemplate(o.text, RENDER_ROW)||'', r = Math.min(w,h)/2 - 1.5*S, fs = o.fontSize*300/72;
+      g.font = fs + 'px ' + FONT_STACK; g.fillStyle = o.stroke; g.textAlign='center';
+      for(var ci=0; ci<txt.length; ci++){ var ang = (ci/Math.max(txt.length,1))*Math.PI*2; g.save(); g.translate(x+w/2 + Math.cos(ang-Math.PI/2)*r, y+h/2 + Math.sin(ang-Math.PI/2)*r); g.rotate(ang); g.fillText(txt.charAt(ci), 0, fs*0.35); g.restore(); }
+      g.textAlign='left';
+    }
+    else if(o.type==='table'){
+      var rowsArr = String(applyTemplate(o.text, RENDER_ROW)||'').split('\n'), rh = h/Math.max(o.rows||2,1), cw = w/Math.max(o.cols||2,1);
+      g.strokeRect(x,y,w,h); g.beginPath();
+      for(var ti=1; ti<(o.rows||2); ti++){ g.moveTo(x, y+rh*ti); g.lineTo(x+w, y+rh*ti); }
+      for(var tj=1; tj<(o.cols||2); tj++){ g.moveTo(x+cw*tj, y); g.lineTo(x+cw*tj, y+h); }
+      g.stroke();
+      g.font = (o.fontSize*300/72) + 'px ' + FONT_STACK; g.fillStyle = o.stroke;
+      rowsArr.slice(0, o.rows||2).forEach(function(rw, ri){ rw.split(',').slice(0, o.cols||2).forEach(function(cell, cj){ g.fillText(cell, x + cw*cj + 1*S, y + rh*ri + 1*S); }); });
+    }
+    else {
+      var ls = objTextLines(o), fs2 = o.fontSize*300/72;
+      g.font = fs2 + 'px ' + (o.type==='calendar' ? 'monospace' : FONT_STACK); g.fillStyle = o.stroke;
+      ls.forEach(function(ln, li){ g.fillText(ln, x, y + fs2*li + 1); });
+    }
+    g.restore();
+  });
+}
+
+/* ===== テンプレート（自作雛形） ===== */
+var TEMPLATES = [
+ {cat:'宛名', name:'宛名ラベル（標準）', preset:'p12a', text:'〒{郵便番号}\n{住所}\n{氏名} 様', fontSize:11},
+ {cat:'宛名', name:'宛名ラベル（大きめ）', preset:'p10', text:'〒{郵便番号}\n{住所}\n{氏名} 様', fontSize:13},
+ {cat:'差出人', name:'差出人ラベル', preset:'p24b', text:'差出人\n{住所}\n{氏名}', fontSize:8},
+ {cat:'名刺', name:'名刺（横・シンプル）', preset:'card10', text:'{氏名}\n{肩書き}\n{メール}', fontSize:12, objs:[{type:'line', x:3, y:34, w:85, h:2}]},
+ {cat:'表示・値札', name:'値札ラベル', preset:'p44', text:'{商品名}\n¥{価格}', fontSize:10},
+ {cat:'表示・値札', name:'表示ラベル（枠付き）', preset:'p8', text:'{タイトル}\n{内容}', fontSize:14, borderW:0.6},
+ {cat:'住所+QR', name:'住所＋QRラベル', preset:'p12a', text:'{氏名}\n{住所}', fontSize:10, qr:true},
+ {cat:'連番・資産管理', name:'資産管理ラベル（連番＋JAN）', preset:'p44', text:'資産管理', fontSize:8, objs:[{type:'serial', x:3, y:12, w:30, h:8, serPrefix:'ASSET-'},{type:'barcode-jan', x:22, y:3, w:24, h:9, text:'490123456789'}]}
+];
+function renderTemplates(){
+  var cat = els.tplCat.value;
+  els.tplGrid.innerHTML = '';
+  TEMPLATES.filter(function(t){ return !cat || t.cat===cat; }).forEach(function(t){
+    var b = document.createElement('button'); b.type='button'; b.className='tpl';
+    b.innerHTML = '<b></b><span></span>'; b.querySelector('b').textContent = t.name; b.querySelector('span').textContent = t.cat + '／' + presetById(t.preset).name;
+    b.addEventListener('click', function(){
+      pushHistory();
+      var p = presetById(t.preset); state.presetId = p.id; state.geo = {cols:p.cols, rows:p.rows, w:p.w, h:p.h, ml:p.ml, mt:p.mt, gx:p.gx, gy:p.gy}; syncCells(); buildPresetOptions(); fillGeoInputs();
+      var d = editTarget(); d.text = t.text; d.fontSize = t.fontSize || 11; d.qr = !!t.qr; if(t.qr) d.qrText = 'https://example.com/';
+      d.borderW = t.borderW || 0; d.objects = (t.objs||[]).map(function(o){ var n = newObj(o.type); for(var k in o) n[k]=o[k]; return n; });
+      syncEditor(); renderPreview(); updateVerify(); persist();
+      setStatus(els.saveStatus, 'テンプレート「' + t.name + '」を適用しました。', 'ok');
+    });
+    els.tplGrid.appendChild(b);
+  });
+}
+els.tplCat.addEventListener('change', renderTemplates);
+
+/* ===== オブジェクト編集UI ===== */
+function selObj(){ var d = editTarget(); if(!d.objects) d.objects = []; return d.objects.filter(function(o){ return o.id===state.selObj; })[0] || null; }
+function renderObjList(){
+  var d = editTarget(); if(!d.objects) d.objects = [];
+  if(!d.objects.length){ els.objList.innerHTML = '<p class="tiny muted" style="padding:8px;">オブジェクトはまだありません。</p>'; els.objForm.hidden = true; return; }
+  els.objList.innerHTML = '';
+  d.objects.slice().reverse().forEach(function(o){
+    var row = document.createElement('div'); row.className = 'objrow' + (o.id===state.selObj?' sel':'') + (o.locked?' locked':'');
+    row.textContent = (o.locked?'🔒 ':'') + o.type + '：' + (o.type==='serial' ? '連番' : o.type==='date' ? '日付' : o.type==='calendar' ? 'カレンダー' : String(o.text||'').split('\n')[0].slice(0,18));
+    row.addEventListener('click', function(){ state.selObj = o.id; renderObjList(); syncObjForm(); });
+    els.objList.appendChild(row);
+  });
+  syncObjForm();
+}
+function syncObjForm(){
+  var o = selObj(); els.objForm.hidden = !o; if(!o) return;
+  els.objText.value = o.text || ''; els.objFmt.value = o.type==='serial' ? 'serial' : o.type==='calendar' ? 'calendar' : (o.fmt || 'yyyy/MM/dd');
+  els.objFont.value = o.fontSize; els.objX.value = o.x; els.objY.value = o.y; els.objW.value = o.w; els.objH.value = o.h; els.objAngle.value = o.angle || 0;
+  els.objRows.value = o.rows || 2; els.objCols.value = o.cols || 2; els.objYearM.value = o.yearMonth || '';
+  els.serStart.value = o.serStart || 1; els.serStep.value = o.serStep || 1; els.serDigits.value = o.serDigits || 4; els.serAffix.value = o.serPrefix || '';
+  els.objFill.value = o.fill || '#0e6e63'; els.objStroke.value = o.stroke || '#14181c';
+  els.btnObjLock.setAttribute('aria-pressed', o.locked ? 'true' : 'false');
+}
+function objChanged(){
+  var o = selObj(); if(!o || o.locked) { renderPreview(); return; }
+  o.text = els.objText.value; o.fontSize = parseFloat(els.objFont.value) || 11;
+  o.x = parseFloat(els.objX.value) || 0; o.y = parseFloat(els.objY.value) || 0; o.w = Math.max(1, parseFloat(els.objW.value) || 10); o.h = Math.max(1, parseFloat(els.objH.value) || 5);
+  o.angle = parseFloat(els.objAngle.value) || 0; o.rows = Math.max(1, parseInt(els.objRows.value,10) || 1); o.cols = Math.max(1, parseInt(els.objCols.value,10) || 1);
+  o.yearMonth = els.objYearM.value; o.serStart = parseInt(els.serStart.value,10) || 0; o.serStep = parseInt(els.serStep.value,10) || 1; o.serDigits = Math.max(1, parseInt(els.serDigits.value,10) || 1); o.serPrefix = els.serAffix.value;
+  o.fill = els.objFill.value; o.stroke = els.objStroke.value;
+  if(els.objFmt.value !== 'serial' && els.objFmt.value !== 'calendar') o.fmt = els.objFmt.value;
+  renderObjListSoft(); renderPreview(); persist();
+}
+function renderObjListSoft(){ /* リスト再描画は入力フォーカスを奪うため、内容変更時はプレビューのみ */ }
+['objText','objFont','objX','objY','objW','objH','objAngle','objRows','objCols','objYearM','serStart','serStep','serDigits','serAffix','objFill','objStroke','objFmt'].forEach(function(id){ els[id].addEventListener('input', objChanged); els[id].addEventListener('change', function(){ renderObjList(); }); });
+els.btnObjAdd.addEventListener('click', function(){
+  pushHistory(); var d = editTarget(); if(!d.objects) d.objects = [];
+  var o = newObj(els.objType.value);
+  if(o.type==='calendar'){ o.w = 62; o.h = 30; o.fontSize = 7; }
+  if(o.type==='table'){ o.w = 50; o.h = 18; }
+  if(o.type.indexOf('barcode')===0 || o.type==='isbn'){ o.w = 38; o.h = 14; }
+  if(o.type==='circular'){ o.w = 30; o.h = 30; }
+  d.objects.push(o); state.selObj = o.id; renderObjList(); renderPreview(); persist();
+});
+els.btnObjDel.addEventListener('click', function(){ var d = editTarget(); var o = selObj(); if(!o) return; pushHistory(); d.objects = d.objects.filter(function(x){ return x.id !== o.id; }); state.selObj = null; renderObjList(); renderPreview(); persist(); });
+els.btnObjDup.addEventListener('click', function(){ var d = editTarget(); var o = selObj(); if(!o) return; pushHistory(); var n = {}; for(var k in o) n[k]=o[k]; n.id = 'o'+(objSeq++); n.x += 3; n.y += 3; n.locked = false; d.objects.push(n); state.selObj = n.id; renderObjList(); renderPreview(); persist(); });
+els.btnObjUp.addEventListener('click', function(){ var d = editTarget(); var i = d.objects.findIndex(function(x){ return x.id===state.selObj; }); if(i>=0 && i<d.objects.length-1){ var t=d.objects[i]; d.objects[i]=d.objects[i+1]; d.objects[i+1]=t; renderObjList(); renderPreview(); persist(); } });
+els.btnObjDown.addEventListener('click', function(){ var d = editTarget(); var i = d.objects.findIndex(function(x){ return x.id===state.selObj; }); if(i>0){ var t=d.objects[i]; d.objects[i]=d.objects[i-1]; d.objects[i-1]=t; renderObjList(); renderPreview(); persist(); } });
+els.btnObjLock.addEventListener('click', function(){ var o = selObj(); if(!o) return; o.locked = !o.locked; renderObjList(); renderPreview(); persist(); });
+document.querySelectorAll('[data-alignobj]').forEach(function(b){ b.addEventListener('click', function(){
+  var o = selObj(); if(!o || o.locked) return; var g = state.geo, mode = this.getAttribute('data-alignobj');
+  if(mode==='left') o.x = 0; if(mode==='hcenter') o.x = (g.w - o.w)/2; if(mode==='right') o.x = g.w - o.w;
+  if(mode==='top') o.y = 0; if(mode==='vcenter') o.y = (g.h - o.h)/2; if(mode==='bottom') o.y = g.h - o.h;
+  syncObjForm(); renderPreview(); persist();
+}); });
+
+/* ===== 装飾コントロール ===== */
+function decoBind(){ 
+ els.inFontFam.addEventListener('change', function(){ editTarget().fontFamily = this.value; renderPreview(); persist(); });
+ els.inBg.addEventListener('input', function(){ editTarget().bg = this.value; renderPreview(); persist(); });
+ els.inLS.addEventListener('input', function(){ editTarget().letterSpacing = parseFloat(this.value)||0; renderPreview(); persist(); });
+ els.inLH.addEventListener('input', function(){ editTarget().lineHeight = parseFloat(this.value)||1.3; renderPreview(); persist(); });
+ els.inStrokeW.addEventListener('input', function(){ editTarget().strokeW = parseFloat(this.value)||0; renderPreview(); persist(); });
+ els.inStrokeC.addEventListener('input', function(){ editTarget().strokeColor = this.value; renderPreview(); persist(); });
+ els.inBorderW.addEventListener('input', function(){ editTarget().borderW = parseFloat(this.value)||0; renderPreview(); persist(); });
+ els.inBorderC.addEventListener('input', function(){ editTarget().borderColor = this.value; renderPreview(); persist(); });
+ els.btnVertical.addEventListener('click', function(){ var d=editTarget(); d.vertical=!d.vertical; syncEditor(); renderPreview(); persist(); });
+ els.btnShadow.addEventListener('click', function(){ var d=editTarget(); d.shadow=!d.shadow; syncEditor(); renderPreview(); persist(); });
+ els.btn3d.addEventListener('click', function(){ var d=editTarget(); d.threeD=!d.threeD; syncEditor(); renderPreview(); persist(); });
+}
+decoBind();
+
+/* ===== 元に戻す／やり直す ===== */
+var histUndo = [], histRedo = [], histBusy = false;
+function pushHistory(){ if(histBusy) return; try{ histUndo.push(JSON.stringify(serialize())); if(histUndo.length>60) histUndo.shift(); histRedo = []; }catch(e){} }
+function applyHist(json){ histBusy = true; try{ applyData(JSON.parse(json)); }catch(e){} histBusy = false; renderPreview(); updateVerify(); persist(); }
+els.btnUndo.addEventListener('click', function(){ if(!histUndo.length) return; histRedo.push(JSON.stringify(serialize())); applyHist(histUndo.pop()); });
+els.btnRedo.addEventListener('click', function(){ if(!histRedo.length) return; histUndo.push(JSON.stringify(serialize())); applyHist(histRedo.pop()); });
+document.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); els.btnUndo.click(); } if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='y'){ e.preventDefault(); els.btnRedo.click(); } });
+
+/* ===== レイアウト操作・用紙検索・ズーム・開始位置・画像書き出し ===== */
+els.btnCopyAll.addEventListener('click', function(){ if(state.mode!=='each'){ setStatus(els.saveStatus, '面コピーは「面ごとに編集」モードで使ってください。', 'err'); return; } pushHistory(); var src = cloneDesign(state.cells[state.sel]); state.cells = state.cells.map(function(){ return cloneDesign(src); }); renderPreview(); persist(); setStatus(els.saveStatus, '選択面を全ての面へコピーしました。', 'ok'); });
+els.btnCopySel.addEventListener('click', function(){ if(state.mode!=='each'){ setStatus(els.saveStatus, '面コピーは「面ごとに編集」モードで使ってください。', 'err'); return; } var to = Math.max(1, parseInt(els.copyTo.value,10)||1) - 1; if(to >= state.cells.length){ setStatus(els.saveStatus, 'コピー先の面がありません。', 'err'); return; } pushHistory(); state.cells[to] = cloneDesign(state.cells[state.sel]); renderPreview(); persist(); setStatus(els.saveStatus, (to+1) + '番目の面へコピーしました。', 'ok'); });
+els.btnClearSel.addEventListener('click', function(){ if(state.mode!=='each'){ setStatus(els.saveStatus, '面クリアは「面ごとに編集」モードで使ってください。', 'err'); return; } pushHistory(); state.cells[state.sel] = emptyDesign(); syncEditor(); renderPreview(); persist(); });
+function buildPresetOptionsFiltered(){
+  var q = (els.paperSearch.value||'').trim().toLowerCase();
+  els.presetSel.innerHTML = '';
+  PRESETS.forEach(function(p){
+    var hay = (p.name + ' ' + (p.hinban||'') + ' ' + p.w + ' ' + p.h).toLowerCase();
+    if(q && hay.indexOf(q) < 0) return;
+    var o = document.createElement('option'); o.value = p.id; o.textContent = p.name + (p.hinban ? '（' + p.hinban + '）' : ''); els.presetSel.appendChild(o);
+  });
+  if(els.presetSel.querySelector('option[value="'+state.presetId+'"]')) els.presetSel.value = state.presetId;
+}
+els.paperSearch.addEventListener('input', buildPresetOptionsFiltered);
+els.inZoom.addEventListener('input', function(){ state.zoom = parseInt(this.value,10); els.zoomVal.textContent = state.zoom + '%'; var svg = els.sheetHost.querySelector('svg'); if(svg) svg.style.maxWidth = (520 * state.zoom / 100) + 'px'; });
+els.inStartCell.addEventListener('input', function(){ state.startCell = Math.max(1, parseInt(this.value,10)||1); persist(); });
+els.inCopies.addEventListener('input', function(){ state.copies = Math.max(1, parseInt(this.value,10)||1); persist(); });
+function exportFace(mime, ext){ var d = editTarget(); RENDER_IDX = 0; RENDER_ROW = null; var jobs = d.img ? [loadImg(d.img).catch(function(){})] : []; Promise.all(jobs).then(function(){ var cv = labelCanvas(d, state.geo.w, state.geo.h); var a = document.createElement('a'); a.href = cv.toDataURL(mime); a.download = 'デザイン面.' + ext; document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); }, 300); }); }
+els.btnPng.addEventListener('click', function(){ exportFace('image/png', 'png'); });
+els.btnJpg.addEventListener('click', function(){ exportFace('image/jpeg', 'jpg'); });
+renderTemplates();
+
+/* ===== 画面構成レイヤー連携用フック ===== */
+window.__LT = {state:state, emptyDesign:emptyDesign, cloneDesign:cloneDesign, renderPreview:renderPreview, syncEditor:syncEditor, persist:persist, pushHistory:pushHistory, perPage:perPage, pageCount:pageCount, setMode:setMode, genPDF:genPDF, hasContent:hasContent};
+
+/* ===== 初期化 ===== */
+buildPresetOptions();
+(function init(){
+  var restored = false;
+  try{
+    var raw = localStorage.getItem(LS_AUTO);
+    if(raw){ applyData(JSON.parse(raw)); restored = true; }
+  }catch(e){}
+  if(!restored){ fillGeoInputs(); setMode('same'); }
+  if(!els.saveName.value){ var nowD = new Date(); els.saveName.value = nowD.getFullYear() + String(nowD.getMonth()+1).padStart(2,'0') + String(nowD.getDate()).padStart(2,'0') + '-' + state.presetId; }
+  renderTemplates();
+  renderSaveList();
+  if(!bwipLib()) noteBwipFallback();
+  renderPreview(); updateVerify();
+  if(window.qrcode){ qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8']; }
+})();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var LT = window.__LT;
+if(!LT) return;
+var state = LT.state;
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+function escT(s){ return String(s == null ? '' : s); }
+
+/* ============ 元のカード要素を取得 ============ */
+var wrap = document.querySelector('.wrap');
+var layoutEl = document.querySelector('.layout');
+var noticeEl = document.querySelector('details.notice');
+var leftCards = document.querySelectorAll('.col-left > section.card');
+var rightCards = document.querySelectorAll('.col-right > section.card');
+var sheetCard = leftCards[0], modeCard = leftCards[1], designCard = leftCards[2],
+    tplCard = leftCards[3], decoCard = leftCards[4], objCard = leftCards[5],
+    layoutCard = leftCards[6], csvCard = leftCards[7], saveCard = leftCards[8];
+var previewCard = rightCards[0], pdfCard = rightCards[1], verifyCard = rightCards[2],
+    alyCard = rightCards[3], aboutCard = rightCards[4], usageCard = rightCards[5];
+var footerEl = document.querySelector('footer.about');
+var sheetHost = $('sheetHost');
+
+/* ============ 汎用モーダル ============ */
+var modalBack = el('div', 'modalback'); modalBack.hidden = true;
+var modalBox = el('div', 'modalbox');
+var modalTitle = el('h3'); var modalBody = el('div'); var modalBtns = el('div', 'm-btns');
+modalBox.appendChild(modalTitle); modalBox.appendChild(modalBody); modalBox.appendChild(modalBtns);
+modalBack.appendChild(modalBox); document.body.appendChild(modalBack);
+function closeModal(){ modalBack.hidden = true; modalBtns.innerHTML = ''; modalBody.innerHTML = ''; }
+modalBack.addEventListener('click', function(e){ if(e.target === modalBack) closeModal(); });
+function openModal(title, bodyNode, buttons){
+  modalTitle.textContent = title; modalBody.innerHTML = '';
+  if(typeof bodyNode === 'string'){ var p = el('p'); p.textContent = bodyNode; modalBody.appendChild(p); }
+  else if(bodyNode) modalBody.appendChild(bodyNode);
+  modalBtns.innerHTML = '';
+  buttons.forEach(function(b){
+    var btn = el('button', b.primary ? 'primary grow' : '', b.label); btn.type = 'button';
+    btn.addEventListener('click', function(){ if(!b.keepOpen) closeModal(); if(b.onClick) b.onClick(); });
+    modalBtns.appendChild(btn);
+  });
+  modalBack.hidden = false;
+}
+
+/* ============ 段階の説明モーダル（初回のみ・表示しない設定はブラウザに保存） ============ */
+var SEEN_KEY = 'labeltool.v2.stageSeen';
+function loadSeen(){ try{ return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); }catch(e){ return {}; } }
+function saveSeen(s){ try{ localStorage.setItem(SEEN_KEY, JSON.stringify(s)); }catch(e){} }
+var STAGE_INTRO = {
+  paper: 'お使いのラベル用紙を選ぶ画面です。品番・品名で検索するか、一覧のカードから選んでください。一片サイズや面数は右の「用紙情報」で確認でき、数値の直接入力（自由設定）も下に残しています。',
+  template: 'デザインの雛形を選ぶ画面です。白紙から始める場合は先頭の「デザインなし」を選んでください。カードを選ぶと確認画面が出て、「決定」で今の編集対象に雛形が入ります。',
+  design: '1面分のデザインを作る画面です。左で編集する面とオブジェクトを選び、中央のキャンバスで仕上がりを確認しながら、右のプロパティで文字・色・位置を調整します。上のツールバーから文字や図形、コードなどを追加できます。',
+  layout: 'シート全体を扱う画面です。選択した面を縦・横・全面へコピーしたり、面ごとに削除したりできます。面をダブルクリックするとデザイン編集に戻ります。',
+  print: '印刷の画面です。中央のプレビューで全体を確認し、右のボタンからPDFを作成します。最初は枠あり印刷（テスト印刷）で普通紙に試し、位置が合ってから本番の用紙に印刷してください。倍率は必ず100%です。',
+  sashikomi: 'CSV差し込みの画面です。CSVファイル（1行目が見出し）を読み込むと、1行が1ラベルになります。読み込み後はデザイン編集で {列名} の差し込み具合を確認し、用紙選択へ進んでください。'
+};
+function maybeIntro(stage){
+  var txt = STAGE_INTRO[stage]; if(!txt) return;
+  var seen = loadSeen(); if(seen[stage]) return;
+  var body = el('div');
+  var p = el('p'); p.textContent = txt; body.appendChild(p);
+  var lab = el('label', 'chk'); var chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = true;
+  lab.appendChild(chk); lab.appendChild(document.createTextNode('今後この説明を表示しない'));
+  body.appendChild(lab);
+  openModal({paper:'用紙選択', template:'テンプレート', design:'デザイン編集', layout:'レイアウト', print:'印刷', sashikomi:'差し込み'}[stage] || stage, body, [
+    {label:'はじめる', primary:true, onClick:function(){ if(chk.checked){ var s = loadSeen(); s[stage] = 1; saveSeen(s); } }}
+  ]);
+}
+
+/* ============ 段階タブバー ============ */
+var stagebar = el('div', 'stagebar');
+var fileBtn = el('button', 'sb-file', 'ファイル'); fileBtn.type = 'button';
+fileBtn.addEventListener('click', function(){ goStage('start'); });
+stagebar.appendChild(fileBtn);
+var STAGES = [
+  {id:'paper', label:'用紙選択'}, {id:'template', label:'テンプレート'},
+  {id:'design', label:'デザイン編集'}, {id:'sashikomi', label:'差し込み'},
+  {id:'layout', label:'レイアウト'}, {id:'print', label:'印刷'}
+];
+var tabBtns = {};
+STAGES.forEach(function(s, i){
+  if(i > 0){ var ar = el('span', 'arrow', '›'); stagebar.appendChild(ar); }
+  var b = el('button', 'stagetab'); b.type = 'button'; b.setAttribute('data-stage-tab', s.id);
+  var n = el('span', 'n', String(i + 1)); b.appendChild(n); b.appendChild(document.createTextNode(s.label));
+  b.addEventListener('click', function(){ goStage(s.id); });
+  if(s.id === 'sashikomi'){ b.hidden = state.mode !== 'csv'; b.id = 'tabSashikomi'; }
+  tabBtns[s.id] = b; stagebar.appendChild(b);
+});
+wrap.insertBefore(stagebar, wrap.firstChild);
+
+/* ============ 画面コンテナ ============ */
+var screens = el('div'); screens.id = 'screens';
+function mkScreen(id){ var s = el('section', 'screen'); s.id = 'screen-' + id; screens.appendChild(s); return s; }
+var scrStart = mkScreen('start'), scrPaper = mkScreen('paper'), scrTemplate = mkScreen('template'),
+    scrDesign = mkScreen('design'), scrSashikomi = mkScreen('sashikomi'),
+    scrLayout = mkScreen('layout'), scrPrint = mkScreen('print');
+wrap.insertBefore(screens, layoutEl);
+
+/* ============ スタート画面 ============ */
+if(noticeEl) scrStart.appendChild(noticeEl);
+var startCards = el('div', 'startcards');
+function startCard(icon, title, desc, btnLabel, fn){
+  var c = el('div', 'startcard');
+  c.appendChild(el('div', 'big', icon)); c.appendChild(el('h3', null, title)); c.appendChild(el('p', null, desc));
+  var b = el('button', 'primary', btnLabel); b.type = 'button'; b.addEventListener('click', fn); c.appendChild(b);
+  startCards.appendChild(c);
+}
+startCard('▤', 'ファイルを開く', 'ブラウザ内に保存したデザイン、書き出したJSON、ラベル屋さんの .aly ファイル（文字の取り込みのみ）から再開します。', '開く・保存の画面へ', function(){
+  var t = $('openPanel'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+});
+startCard('＋', '新規作成', '用紙を選ぶところから、新しいラベル・カードを作ります。', '用紙選択へ進む', function(){ goStage('paper'); });
+startCard('⇥', '差し込み新規作成', 'CSVの名簿など、1行ごとに違う内容を流し込む作り方です。まずCSVを読み込みます。', 'CSV読み込みへ進む', function(){ LT.setMode('csv'); goStage('sashikomi'); });
+scrStart.appendChild(startCards);
+var openPanel = el('div', 'openpanel'); openPanel.id = 'openPanel';
+openPanel.appendChild(saveCard);
+var openStack = el('div', 'openstack');
+openStack.appendChild(alyCard); openStack.appendChild(usageCard);
+openPanel.appendChild(openStack);
+scrStart.appendChild(openPanel);
+scrStart.appendChild(aboutCard);
+if(footerEl) scrStart.appendChild(footerEl);
+
+/* ============ 用紙選択画面 ============ */
+var PRESET_VIEW = [
+ {id:'p12a', cols:2, rows:6}, {id:'p10', cols:2, rows:5}, {id:'p12b', cols:2, rows:6}, {id:'p8', cols:2, rows:4},
+ {id:'p24a', cols:3, rows:8}, {id:'p24b', cols:3, rows:8}, {id:'p21', cols:3, rows:7}, {id:'p18', cols:3, rows:6},
+ {id:'p27', cols:3, rows:9}, {id:'p44', cols:4, rows:11}, {id:'p65', cols:5, rows:13}, {id:'card10', cols:2, rows:5},
+ {id:'p4', cols:2, rows:2}, {id:'p2', cols:1, rows:2}, {id:'p1', cols:1, rows:1}
+];
+var presetTextCache = {};
+function presetData(id){
+  if(presetTextCache[id]) return presetTextCache[id];
+  var sel = $('presetSel');
+  for(var i = 0; i < sel.options.length; i++) if(sel.options[i].value === id) return sel.options[i].textContent;
+  return id;
+}
+function geoVals(){
+  return { cols: parseInt($('inCols').value, 10) || 0, rows: parseInt($('inRows').value, 10) || 0,
+           w: parseFloat($('inW').value) || 0, h: parseFloat($('inH').value) || 0 };
+}
+var paperSearchBar = el('div', 'papersearchbar');
+var segSearch = el('div', 'seg smallseg'); segSearch.setAttribute('role', 'group');
+var segByName = el('button', null, '品番・品名で検索'); segByName.type = 'button'; segByName.setAttribute('aria-pressed', 'true');
+var segBySize = el('button', null, '一片サイズから検索'); segBySize.type = 'button'; segBySize.setAttribute('aria-pressed', 'false');
+segSearch.appendChild(segByName); segSearch.appendChild(segBySize);
+paperSearchBar.appendChild(segSearch);
+var searchNameWrap = el('div', 'grow2');
+var paperSearchLabel = document.querySelector('label[for="paperSearch"]');
+if(paperSearchLabel) searchNameWrap.appendChild(paperSearchLabel);
+searchNameWrap.appendChild($('paperSearch'));
+paperSearchBar.appendChild(searchNameWrap);
+var searchSizeWrap = el('div', 'grow2'); searchSizeWrap.hidden = true;
+var szRow = el('div', 'row');
+var szW = document.createElement('input'); szW.type = 'number'; szW.step = '0.1'; szW.placeholder = '一片の横 mm'; szW.setAttribute('aria-label', '一片の横 mm');
+var szH = document.createElement('input'); szH.type = 'number'; szH.step = '0.1'; szH.placeholder = '一片の縦 mm'; szH.setAttribute('aria-label', '一片の縦 mm');
+var szBtn = el('button', null, 'このサイズで探す'); szBtn.type = 'button';
+szRow.appendChild(szW); szRow.appendChild(szH); szRow.appendChild(szBtn);
+searchSizeWrap.appendChild(szRow);
+paperSearchBar.appendChild(searchSizeWrap);
+function setSearchMode(size){
+  segByName.setAttribute('aria-pressed', size ? 'false' : 'true');
+  segBySize.setAttribute('aria-pressed', size ? 'true' : 'false');
+  searchNameWrap.hidden = size; searchSizeWrap.hidden = !size;
+}
+segByName.addEventListener('click', function(){ setSearchMode(false); filterPaperCards(''); });
+segBySize.addEventListener('click', function(){ setSearchMode(true); szW.focus(); });
+scrPaper.appendChild(paperSearchBar);
+
+var paperLayout = el('div', 'paperlayout');
+var paperGridCard = el('div', 'card');
+var pgH = el('h2', null, '用紙一覧'); paperGridCard.appendChild(pgH);
+var paperGrid = el('div', 'papergrid'); paperGridCard.appendChild(paperGrid);
+var paperGridNote = el('p', 'tiny muted mt', 'カードを押すと選択、ダブルクリックで決定してテンプレートへ進みます。一覧に無い用紙は下の詳細設定（自由設定）で実寸を入力してください。');
+paperGridCard.appendChild(paperGridNote);
+paperLayout.appendChild(paperGridCard);
+var paperRail = el('div'); paperRail.style.display = 'flex'; paperRail.style.flexDirection = 'column'; paperRail.style.gap = '14px';
+var paperInfo = el('div', 'infocard');
+paperInfo.appendChild(el('h3', null, '用紙情報'));
+var paperDl = document.createElement('dl'); paperInfo.appendChild(paperDl);
+paperRail.appendChild(paperInfo);
+var btnPaperNext = el('button', 'primary nextbtn', 'テンプレートへ ›'); btnPaperNext.type = 'button';
+btnPaperNext.addEventListener('click', function(){ goStage('template'); });
+paperRail.appendChild(btnPaperNext);
+paperLayout.appendChild(paperRail);
+scrPaper.appendChild(paperLayout);
+var sheetH2 = sheetCard.querySelector('h2'); if(sheetH2) sheetH2.firstChild.textContent = '用紙の詳細設定 ';
+scrPaper.appendChild(sheetCard);
+
+var paperCardEls = {};
+function buildPaperCards(){
+  paperGrid.innerHTML = ''; paperCardEls = {};
+  PRESET_VIEW.forEach(function(pv){
+    var txt = presetData(pv.id); presetTextCache[pv.id] = txt;
+    var card = el('button', 'papercard'); card.type = 'button'; card.setAttribute('data-preset', pv.id);
+    var mg = el('span', 'minigrid'); mg.style.gridTemplateColumns = 'repeat(' + pv.cols + ',1fr)';
+    for(var i = 0; i < pv.cols * pv.rows; i++) mg.appendChild(el('i'));
+    card.appendChild(mg);
+    card.appendChild(el('span', 'pc-name', txt.split('（')[0]));
+    var hin = txt.match(/（(.+)）/); if(hin) card.appendChild(el('span', 'pc-hinban', '品番 ' + hin[1]));
+    card.addEventListener('click', function(){ selectPreset(pv.id, false); });
+    card.addEventListener('dblclick', function(){ selectPreset(pv.id, true); });
+    paperGrid.appendChild(card); paperCardEls[pv.id] = card;
+  });
+  markPaperSel();
+}
+function markPaperSel(){
+  var cur = $('presetSel').value;
+  Object.keys(paperCardEls).forEach(function(id){ paperCardEls[id].classList.toggle('sel', id === cur); });
+  updatePaperInfo();
+}
+function selectPreset(id, goNext){
+  var sel = $('presetSel'); sel.value = id;
+  sel.dispatchEvent(new Event('change', {bubbles:true}));
+  markPaperSel();
+  if(goNext) goStage('template');
+}
+function updatePaperInfo(){
+  var g = geoVals(); var sel = $('presetSel');
+  var opt = sel.options[sel.selectedIndex];
+  var rows = [
+    ['名称', opt ? opt.textContent.split('（')[0] : '—'],
+    ['品番', (opt && opt.textContent.match(/（(.+)）/)) ? opt.textContent.match(/（(.+)）/)[1] : '—'],
+    ['用紙サイズ', 'A4判 210×297mm'],
+    ['一片サイズ', g.w + ' × ' + g.h + ' mm'],
+    ['面数', g.cols + '列 × ' + g.rows + '段 ＝ ' + (g.cols * g.rows) + '面']
+  ];
+  paperDl.innerHTML = '';
+  rows.forEach(function(r){ var dt = el('dt', null, r[0]); var dd = el('dd', null, r[1]); paperDl.appendChild(dt); paperDl.appendChild(dd); });
+}
+function filterPaperCards(q){
+  q = String(q || '').trim().toLowerCase();
+  PRESET_VIEW.forEach(function(pv){
+    var c = paperCardEls[pv.id]; if(!c) return;
+    var hay = presetData(pv.id).toLowerCase();
+    c.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
+  });
+}
+$('paperSearch').addEventListener('input', function(){ filterPaperCards(this.value); markPaperSelSoon(); });
+szBtn.addEventListener('click', function(){
+  var w = parseFloat(szW.value), h = parseFloat(szH.value);
+  var first = null;
+  PRESET_VIEW.forEach(function(pv){
+    var c = paperCardEls[pv.id]; if(!c) return;
+    var m = presetData(pv.id).match(/([\d.]+)×([\d.]+)mm/);
+    var pw = m ? parseFloat(m[1]) : 0, ph = m ? parseFloat(m[2]) : 0;
+    var ok = (isNaN(w) || Math.abs(pw - w) < 0.11) && (isNaN(h) || Math.abs(ph - h) < 0.11);
+    c.style.display = ok ? '' : 'none';
+    if(ok && !first) first = pv.id;
+  });
+  if(first) selectPreset(first, false);
+});
+var markTimer = null;
+function markPaperSelSoon(){ if(markTimer) clearTimeout(markTimer); markTimer = setTimeout(markPaperSel, 60); }
+$('presetSel').addEventListener('change', markPaperSelSoon);
+['inCols','inRows','inW','inH'].forEach(function(id){ $(id).addEventListener('input', function(){ updatePaperInfo(); }); });
+
+/* ============ テンプレート画面 ============ */
+var tplCatLabel = tplCard.querySelector('label[for="tplCat"]');
+var tplGridEl = $('tplGrid');
+var tplSide = el('div', 'card');
+tplSide.appendChild(el('h2', null, 'カテゴリ'));
+if(tplCatLabel) tplSide.appendChild(tplCatLabel);
+tplSide.appendChild($('tplCat'));
+tplSide.appendChild(el('p', 'tiny muted mt', '先頭の「デザインなし」は白紙で始めるためのものです。雛形はすべて自作で、文字は汎用のサンプル文面です。'));
+var btnTplNext = el('button', 'primary nextbtn mt', 'デザイン編集へ ›'); btnTplNext.type = 'button';
+btnTplNext.addEventListener('click', function(){ goStage('design'); });
+tplSide.appendChild(btnTplNext);
+var tplWrap = el('div', 'tpllayout');
+var tplMain = el('div'); tplMain.appendChild(tplCard);
+tplWrap.appendChild(tplSide); tplWrap.appendChild(tplMain);
+scrTemplate.appendChild(tplWrap);
+
+var blankTplBtn = null;
+function ensureBlankTpl(){
+  if(blankTplBtn && tplGridEl.contains(blankTplBtn)) return;
+  blankTplBtn = el('button', 'tpl'); blankTplBtn.type = 'button';
+  blankTplBtn.innerHTML = '<b>デザインなし（白紙）</b><span>雛形を使わず、まっさらな面から作ります</span>';
+  blankTplBtn.setAttribute('data-blank-tpl', '1');
+  tplGridEl.insertBefore(blankTplBtn, tplGridEl.firstChild);
+}
+ensureBlankTpl();
+new MutationObserver(function(){ ensureBlankTpl(); }).observe(tplGridEl, {childList:true});
+var tplApplying = false;
+tplGridEl.addEventListener('click', function(e){
+  if(tplApplying) return;
+  var btn = e.target.closest ? e.target.closest('button.tpl') : null;
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+  var isBlank = btn.hasAttribute('data-blank-tpl');
+  var name = isBlank ? 'デザインなし（白紙）' : (btn.querySelector('b') ? btn.querySelector('b').textContent : 'テンプレート');
+  var sub = btn.querySelector('span') ? btn.querySelector('span').textContent : '';
+  var body = el('div');
+  body.appendChild(el('p', null, isBlank ? '編集対象のデザインを白紙に戻します。文字・QR・画像・オブジェクトが消えます。' : 'この雛形を今の編集対象に適用します。入力済みの内容は雛形の内容に置き換わります。'));
+  var pv = el('div', 'tplpreview');
+  pv.style.fontSize = '12pt';
+  pv.textContent = isBlank ? '（白紙）' : name + '\n' + sub;
+  body.appendChild(pv);
+  body.appendChild(el('p', 'tiny muted mt', isBlank ? '' : '適用される用紙： ' + sub));
+  openModal('テンプレートの確認 — ' + name, body, [
+    {label:'キャンセル'},
+    {label:'決定', primary:true, onClick:function(){
+      if(isBlank){
+        LT.pushHistory();
+        var d = (state.mode === 'each') ? state.cells[state.sel] : state.shared;
+        var fresh = LT.emptyDesign();
+        Object.keys(fresh).forEach(function(k){ d[k] = fresh[k]; });
+        state.selObj = null; LT.syncEditor(); LT.renderPreview(); LT.persist();
+      } else {
+        tplApplying = true;
+        btn.dispatchEvent(new MouseEvent('click', {bubbles:false}));
+        tplApplying = false;
+      }
+      goStage('design');
+    }}
+  ]);
+}, true);
+
+/* ============ デザイン編集画面 ============ */
+function tbBtn(label, fn){ var b = el('button', null, label); b.type = 'button'; b.addEventListener('click', fn); return b; }
+function addObjOf(type){ var s = $('objType'); s.value = type; $('btnObjAdd').click(); var f = $('objText'); if(f && !$('objForm').hidden) f.focus(); }
+var designToolbar = el('div', 'designtoolbar');
+designToolbar.appendChild(tbBtn('保存', function(){ $('btnSave').click(); }));
+designToolbar.appendChild(tbBtn('JSON書き出し', function(){ $('btnExport').click(); }));
+designToolbar.appendChild(el('span', 'tb-sep'));
+designToolbar.appendChild(tbBtn('文字', function(){ addObjOf('text'); }));
+designToolbar.appendChild(tbBtn('画像', function(){ $('imgFile').click(); }));
+designToolbar.appendChild(tbBtn('図形', function(){ addObjOf('rect'); }));
+designToolbar.appendChild(tbBtn('線', function(){ addObjOf('line'); }));
+designToolbar.appendChild(tbBtn('コード', function(){ addObjOf('barcode-128'); }));
+designToolbar.appendChild(tbBtn('表', function(){ addObjOf('table'); }));
+designToolbar.appendChild(tbBtn('カレンダー', function(){ addObjOf('calendar'); }));
+designToolbar.appendChild(tbBtn('連番', function(){ addObjOf('serial'); }));
+designToolbar.appendChild(tbBtn('日付', function(){ addObjOf('date'); }));
+var tbRight = el('div', 'tb-right');
+var undoRow = null;
+Array.prototype.forEach.call(objCard.children, function(ch){ if(ch.classList && ch.classList.contains('row') && ch.querySelector('#btnUndo')) undoRow = ch; });
+if(undoRow) tbRight.appendChild(undoRow);
+var zoomLab = el('label', 'f', 'ズーム'); zoomLab.style.margin = '0';
+var designZoom = document.createElement('input'); designZoom.type = 'range'; designZoom.min = '40'; designZoom.max = '220'; designZoom.value = '100'; designZoom.step = '10'; designZoom.style.width = '110px';
+tbRight.appendChild(zoomLab); tbRight.appendChild(designZoom);
+var rotateOn = false;
+var btnRotate = tbBtn('面を90°回転', function(){ rotateOn = !rotateOn; this.setAttribute('aria-pressed', rotateOn ? 'true' : 'false'); this.classList.toggle('toggle', true); faceWrap.classList.toggle('rotated', rotateOn); state.rotateView = rotateOn ? 90 : 0; });
+btnRotate.setAttribute('aria-pressed', 'false');
+tbRight.appendChild(btnRotate);
+designToolbar.appendChild(tbRight);
+scrDesign.appendChild(designToolbar);
+
+var designGrid = el('div', 'designgrid');
+var dLeft = el('div', 'sidepanel');
+dLeft.appendChild(modeCard);
+var thumbCard = el('div', 'card');
+thumbCard.appendChild(el('h2', null, '面の選択'));
+var thumbBox = el('div', 'thumbbox'); thumbCard.appendChild(thumbBox);
+thumbCard.appendChild(el('p', 'tiny muted mt', 'シート全体の縮小図です。押すとその面が編集対象になります（面ごとに編集モード時）。'));
+dLeft.appendChild(thumbCard);
+var objAddCard = el('div', 'card');
+objAddCard.appendChild(el('h2', null, 'オブジェクト'));
+var objTypeLabel = objCard.querySelector('label[for="objType"]');
+var objTypeRow = null;
+Array.prototype.forEach.call(objCard.children, function(ch){ if(ch.classList && ch.classList.contains('row') && ch.querySelector('#objType')) objTypeRow = ch; });
+if(objTypeLabel) objAddCard.appendChild(objTypeLabel);
+if(objTypeRow) objAddCard.appendChild(objTypeRow);
+objAddCard.appendChild($('objList'));
+dLeft.appendChild(objAddCard);
+designGrid.appendChild(dLeft);
+
+var dCenter = el('div');
+var faceCard = el('div', 'card');
+var faceHead = el('div', 'facehead'); faceCard.appendChild(faceHead);
+var faceWrap = el('div', 'facewrap'); var faceBox = el('div', 'facebox'); faceWrap.appendChild(faceBox); faceCard.appendChild(faceWrap);
+faceCard.appendChild(el('p', 'tiny muted mt', '選択中の1面だけを大きく表示しています。数値の調整は右のプロパティから行います。'));
+dCenter.appendChild(faceCard);
+designGrid.appendChild(dCenter);
+
+var dRight = el('div');
+var btnToLayout = el('button', 'primary nextbtn', 'レイアウトへ ›'); btnToLayout.type = 'button';
+btnToLayout.addEventListener('click', function(){ goStage('layout'); });
+dRight.appendChild(btnToLayout);
+var btnToTpl = el('button', 'subbtn', 'テンプレート変更'); btnToTpl.type = 'button';
+btnToTpl.addEventListener('click', function(){ goStage('template'); });
+dRight.appendChild(btnToTpl);
+function mkAcc(title, node, open){
+  var d = el('details', 'acc'); if(open) d.open = true;
+  var s = el('summary', null, title); d.appendChild(s);
+  var body = el('div', 'accbody'); body.appendChild(node); d.appendChild(body);
+  return d;
+}
+dRight.appendChild(mkAcc('スタイル（主テキスト）', designCard, true));
+dRight.appendChild(mkAcc('影・縁取り・背景', decoCard, false));
+var objDetailWrap = el('div');
+var bwipStatus = $('bwipStatus'), bwipOk = $('bwipOk');
+var objDetailCard = el('div', 'card');
+if(bwipStatus) objDetailCard.appendChild(bwipStatus);
+if(bwipOk) objDetailCard.appendChild(bwipOk);
+objDetailCard.appendChild($('objForm'));
+objDetailWrap.appendChild(objDetailCard);
+dRight.appendChild(mkAcc('位置・移動（選択オブジェクト）', objDetailWrap, false));
+designGrid.appendChild(dRight);
+scrDesign.appendChild(designGrid);
+if(objCard.parentNode) objCard.parentNode.removeChild(objCard);
+
+/* ============ 差し込み画面 ============ */
+var sashCard = el('div', 'card');
+sashCard.appendChild(el('h2', null, '差し込み新規作成'));
+sashCard.appendChild(el('p', 'small', 'CSVファイル（1行目が見出し、1行 = 1ラベル）を読み込むところから始めます。読み込み後は「デザイン編集」で {列名} の差し込みを確認し、「用紙選択」で用紙を合わせてください。'));
+var btnSashPaper = el('button', 'primary nextbtn', '用紙選択へ ›'); btnSashPaper.type = 'button';
+btnSashPaper.addEventListener('click', function(){ goStage('paper'); });
+sashCard.appendChild(btnSashPaper);
+scrSashikomi.appendChild(sashCard);
+scrSashikomi.appendChild(csvCard);
+
+/* ============ レイアウト画面 ============ */
+function cellsOp(fn, needEach){
+  if(needEach && state.mode !== 'each'){ var ss = $('saveStatus'); if(ss){ ss.textContent = 'この操作は「面ごとに編集」モードで使ってください。デザイン編集画面の左上で切り替えます。'; ss.className = 'status err'; } goStage('design'); return; }
+  LT.pushHistory(); fn(); LT.syncEditor(); LT.renderPreview(); LT.persist(); updateLayoutInfo();
+}
+var layoutToolbarCard = el('div', 'card');
+layoutToolbarCard.appendChild(el('h2', null, 'レイアウト操作'));
+var ltRow = el('div', 'layouttoolbar');
+ltRow.appendChild(tbBtn('保存', function(){ $('btnSave').click(); }));
+ltRow.appendChild(tbBtn('縦コピー', function(){ cellsOp(function(){ var src = LT.cloneDesign(state.cells[state.sel]); var col = state.sel % state.geo.cols; state.cells = state.cells.map(function(c, i){ return i % state.geo.cols === col ? LT.cloneDesign(src) : c; }); }, true); }));
+ltRow.appendChild(tbBtn('横コピー', function(){ cellsOp(function(){ var src = LT.cloneDesign(state.cells[state.sel]); var row = Math.floor(state.sel / state.geo.cols); state.cells = state.cells.map(function(c, i){ return Math.floor(i / state.geo.cols) === row ? LT.cloneDesign(src) : c; }); }, true); }));
+ltRow.appendChild(tbBtn('全面コピー', function(){ $('btnCopyAll').click(); updateLayoutInfo(); }));
+ltRow.appendChild(tbBtn('個別削除（選択面）', function(){ $('btnClearSel').click(); updateLayoutInfo(); }));
+ltRow.appendChild(tbBtn('選択外を削除', function(){ cellsOp(function(){ state.cells = state.cells.map(function(c, i){ return i === state.sel ? c : LT.emptyDesign(); }); }, true); }));
+ltRow.appendChild(tbBtn('全て削除', function(){ cellsOp(function(){ state.cells = state.cells.map(function(){ return LT.emptyDesign(); }); }, true); }));
+ltRow.appendChild(tbBtn('ページ追加', function(){ state.copies = Math.min(99, (state.copies || 1) + 1); $('inCopies').value = state.copies; LT.persist(); updateLayoutInfo(); }));
+ltRow.appendChild(tbBtn('ページ削除', function(){ state.copies = Math.max(1, (state.copies || 1) - 1); $('inCopies').value = state.copies; if((state.viewPage || 0) > LT.pageCount() - 1) state.viewPage = LT.pageCount() - 1; LT.persist(); LT.renderPreview(); updateLayoutInfo(); }));
+var ltRight = el('span'); ltRight.style.marginLeft = 'auto'; ltRight.style.display = 'flex'; ltRight.style.gap = '6px';
+ltRight.appendChild(tbBtn('元に戻す', function(){ $('btnUndo').click(); updateLayoutInfo(); }));
+ltRight.appendChild(tbBtn('やり直す', function(){ $('btnRedo').click(); updateLayoutInfo(); }));
+ltRow.appendChild(ltRight);
+layoutToolbarCard.appendChild(ltRow);
+layoutToolbarCard.appendChild(el('p', 'tiny muted mt', 'ズームは下のプレビューのスライダーで調整できます。指定面へのコピーは次のカードにあります。'));
+scrLayout.appendChild(layoutToolbarCard);
+scrLayout.appendChild(layoutCard);
+scrLayout.appendChild(previewCard);
+var pageNav = el('div', 'pagenav');
+var btnPgPrev = tbBtn('‹ 前のページ', function(){ if((state.viewPage || 0) > 0){ state.viewPage--; LT.renderPreview(); updateLayoutInfo(); } });
+var pgLabel = el('span', 'pglabel', '');
+var btnPgNext = tbBtn('次のページ ›', function(){ if((state.viewPage || 0) < LT.pageCount() - 1){ state.viewPage++; LT.renderPreview(); updateLayoutInfo(); } });
+pageNav.appendChild(btnPgPrev); pageNav.appendChild(pgLabel); pageNav.appendChild(btnPgNext);
+scrLayout.appendChild(pageNav);
+sheetHost.addEventListener('dblclick', function(){ goStage('design'); });
+function blankCount(){
+  var n = LT.perPage(), blanks = 0;
+  if(state.mode === 'same') return LT.hasContent(state.shared) ? 0 : n;
+  if(state.mode === 'each'){ state.cells.forEach(function(c){ if(!LT.hasContent(c)) blanks++; }); return blanks; }
+  var total = Math.max(n, Math.ceil(state.csv.rows.length / n) * n);
+  return Math.max(0, total - state.csv.rows.length);
+}
+function updateLayoutInfo(){
+  pgLabel.textContent = 'ページ ' + ((state.viewPage || 0) + 1) + ' / ' + LT.pageCount();
+}
+
+/* ============ 印刷画面 ============ */
+var corrBlock = null;
+Array.prototype.forEach.call(sheetCard.children, function(ch){ if(ch.classList && ch.classList.contains('mt') && ch.querySelector('#inOX')) corrBlock = ch; });
+var printOptCard = el('div', 'card');
+printOptCard.appendChild(el('h2', null, '印刷オプション'));
+var poRow = el('div', 'printoptions');
+var rangeWrap = el('div');
+rangeWrap.appendChild(el('label', 'f', '印刷ページ範囲'));
+var rangeSel = document.createElement('select');
+rangeSel.innerHTML = '<option value="all">全ページ</option><option value="current">1ページ目のみ</option>';
+rangeSel.addEventListener('change', function(){ state.printRange = this.value; LT.persist(); updatePrintInfo(); });
+rangeWrap.appendChild(rangeSel); poRow.appendChild(rangeWrap);
+function chkOpt(label, fn){
+  var lab = el('label', 'chk'); var c = document.createElement('input'); c.type = 'checkbox';
+  c.addEventListener('change', function(){ fn(c.checked, c); });
+  lab.appendChild(c); lab.appendChild(document.createTextNode(label)); return {lab: lab, box: c};
+}
+var mirrorOpt = chkOpt('反転印刷（左右反転）', function(on){ state.mirror = on; LT.persist(); });
+poRow.appendChild(mirrorOpt.lab);
+var frameOpt = chkOpt('枠あり印刷（枠と寸法を表示）', function(on){ if(on !== state.testOverlay) $('btnTestOverlay').click(); });
+poRow.appendChild(frameOpt.lab);
+printOptCard.appendChild(poRow);
+if(corrBlock){
+  var corrTitle = el('label', 'f mt', '印刷開始位置の微調整（位置補正）');
+  printOptCard.appendChild(corrTitle); printOptCard.appendChild(corrBlock);
+  printOptCard.appendChild(el('p', 'tiny muted', '印刷開始位置（何面目から）は右のPDFカードで指定します。使いかけシートの途中から印刷できます。'));
+}
+scrPrint.appendChild(printOptCard);
+var printGrid = el('div', 'printgrid');
+var printPrevCard = el('div', 'card');
+printPrevCard.appendChild(el('h2', null, '印刷プレビュー'));
+var printPrevBox = el('div', 'sheetbox'); printPrevCard.appendChild(printPrevBox);
+printGrid.appendChild(printPrevCard);
+var printRail = el('div', 'printrail');
+var printBtnCard = el('div', 'card');
+printBtnCard.appendChild(el('h2', null, '出力'));
+var btnBrowserPrint = el('button', 'nextbtn', 'ブラウザで印刷（PDF）'); btnBrowserPrint.type = 'button';
+btnBrowserPrint.addEventListener('click', function(){ LT.genPDF(false); $('pdfStatus').textContent = 'PDFを作成しました。開いたPDFビューアの印刷から、倍率100%・「用紙に合わせる」オフで印刷してください。'; });
+printBtnCard.appendChild(btnBrowserPrint);
+var btnPrintSave = el('button', 'subbtn', 'このデザインを保存'); btnPrintSave.type = 'button';
+btnPrintSave.addEventListener('click', function(){ $('btnSave').click(); });
+printBtnCard.appendChild(btnPrintSave);
+printBtnCard.appendChild(el('p', 'tiny muted', '「PDFをダウンロード」「テスト印刷用PDF」は下のPDFカードにあります。'));
+printRail.appendChild(printBtnCard);
+printRail.appendChild(pdfCard);
+var printPaperInfo = el('div', 'infocard'); printPaperInfo.appendChild(el('h3', null, '用紙情報'));
+var printPaperDl = document.createElement('dl'); printPaperInfo.appendChild(printPaperDl);
+printRail.appendChild(printPaperInfo);
+var printLayoutInfo = el('div', 'infocard'); printLayoutInfo.appendChild(el('h3', null, 'レイアウト情報'));
+var printLayoutDl = document.createElement('dl'); printLayoutInfo.appendChild(printLayoutDl);
+printRail.appendChild(printLayoutInfo);
+printGrid.appendChild(printRail);
+scrPrint.appendChild(printGrid);
+scrPrint.appendChild(verifyCard);
+function fillDl(dl, rows){ dl.innerHTML = ''; rows.forEach(function(r){ dl.appendChild(el('dt', null, r[0])); dl.appendChild(el('dd', null, r[1])); }); }
+function updatePrintInfo(){
+  var g = geoVals(); var sel = $('presetSel'); var opt = sel.options[sel.selectedIndex];
+  fillDl(printPaperDl, [
+    ['名称', opt ? opt.textContent.split('（')[0] : '—'],
+    ['用紙サイズ', 'A4判 210×297mm'],
+    ['一片サイズ', g.w + ' × ' + g.h + ' mm'],
+    ['面数', (g.cols * g.rows) + '面']
+  ]);
+  fillDl(printLayoutDl, [
+    ['ページ数', String(state.printRange === 'current' ? 1 : LT.pageCount()) + ' ページ'],
+    ['空白面数', String(blankCount()) + ' 面（1シートあたり）'],
+    ['印刷開始位置', String(state.startCell || 1) + ' 面目から'],
+    ['位置補正', '左右 ' + (state.ox || 0) + 'mm ／ 上下 ' + (state.oy || 0) + 'mm']
+  ]);
+  if(frameOpt.box.checked !== !!state.testOverlay) frameOpt.box.checked = !!state.testOverlay;
+}
+
+/* ============ プレビューの複製（サムネイル／1面／印刷） ============ */
+function cellRect(i){
+  var g = geoVals();
+  var ml = parseFloat($('inML').value) || 0, mt = parseFloat($('inMT').value) || 0;
+  var gx = parseFloat($('inGX').value) || 0, gy = parseFloat($('inGY').value) || 0;
+  var ox = parseFloat($('inOX').value) || 0, oy = parseFloat($('inOY').value) || 0;
+  var col = i % g.cols, row = Math.floor(i / g.cols);
+  return { x: ml + ox + col * (g.w + gx), y: mt + oy + row * (g.h + gy), w: g.w, h: g.h };
+}
+var cloneBusy = false;
+function refreshClones(){
+  if(cloneBusy) return; cloneBusy = true;
+  requestAnimationFrame(function(){
+    cloneBusy = false;
+    var svg = sheetHost.querySelector('svg'); if(!svg) return;
+    var t = svg.cloneNode(true); t.removeAttribute('style');
+    thumbBox.innerHTML = ''; thumbBox.appendChild(t);
+    Array.prototype.forEach.call(thumbBox.querySelectorAll('.cell'), function(c){
+      c.addEventListener('click', function(){
+        var idx = c.getAttribute('data-i');
+        var orig = sheetHost.querySelector('.cell[data-i="' + idx + '"]');
+        if(orig) orig.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+      });
+    });
+    var r = cellRect(state.sel || 0);
+    var f = svg.cloneNode(true); f.removeAttribute('style');
+    f.setAttribute('viewBox', r.x + ' ' + r.y + ' ' + r.w + ' ' + r.h);
+    f.style.maxWidth = (560 * (parseInt(designZoom.value, 10) / 100)) + 'px';
+    faceBox.innerHTML = ''; faceBox.appendChild(f);
+    var sel2 = $('presetSel'); var opt = sel2.options[sel2.selectedIndex];
+    var g = geoVals();
+    faceHead.textContent = (opt ? opt.textContent.split('（')[0] : '') + ' ／ 一片 ' + g.w + '×' + g.h + 'mm ／ ' + ((state.sel || 0) + 1) + '面目を編集中';
+    var pc = svg.cloneNode(true); pc.removeAttribute('style');
+    printPrevBox.innerHTML = ''; printPrevBox.appendChild(pc);
+    updateLayoutInfo();
+    if(currentStage === 'print') updatePrintInfo();
+  });
+}
+new MutationObserver(function(){ refreshClones(); }).observe(sheetHost, {childList:true, subtree:false});
+designZoom.addEventListener('input', function(){ refreshClones(); });
+document.addEventListener('click', function(e){
+  var cell = e.target.closest ? e.target.closest('#sheetHost .cell') : null;
+  if(cell) setTimeout(refreshClones, 30);
+}, true);
+
+/* ============ 段階遷移 ============ */
+var currentStage = 'start';
+var screenMap = {start: scrStart, paper: scrPaper, template: scrTemplate, design: scrDesign, sashikomi: scrSashikomi, layout: scrLayout, print: scrPrint};
+function goStage(stage){
+  if(stage === 'sashikomi' && state.mode !== 'csv') LT.setMode('csv');
+  currentStage = stage;
+  Object.keys(screenMap).forEach(function(k){ screenMap[k].classList.toggle('active', k === stage); });
+  Object.keys(tabBtns).forEach(function(k){ tabBtns[k].setAttribute('aria-current', k === stage ? 'true' : 'false'); });
+  if(stage === 'paper'){ buildPaperCardsOnce(); }
+  if(stage === 'print'){ if(state.viewPage){ state.viewPage = 0; LT.renderPreview(); } updatePrintInfo(); }
+  if(stage === 'layout'){ updateLayoutInfo(); }
+  refreshClones();
+  maybeIntro(stage);
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+var paperBuilt = false;
+function buildPaperCardsOnce(){ if(paperBuilt) return; paperBuilt = true; buildPaperCards(); }
+window.__goStage = goStage;
+
+/* モード切替に合わせて「差し込み」タブを出し入れ */
+function syncSashTab(){ var b = $('tabSashikomi'); if(b) b.hidden = state.mode !== 'csv'; }
+[$('modeSame'), $('modeEach'), $('modeCsv')].forEach(function(b){ if(b) b.addEventListener('click', function(){ setTimeout(syncSashTab, 30); }); });
+
+/* 空になった元の2カラムを撤去 */
+if(layoutEl.parentNode) layoutEl.parentNode.removeChild(layoutEl);
+
+/* 初期表示：スタート画面 */
+buildPaperCardsOnce();
+syncSashTab();
+goStage('start');
+closeModal();
+})();
+</script>
+
+</body>
+</html>
