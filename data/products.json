@@ -21,10 +21,7 @@
   },
   "pendingVerification": [
     {
-      "note": "6面 63×120mm（72206/73206/66206）: 公表プリセットの上余白23.5mmでは縦が 23.5+120×2=263.5mm で297mmに閉じないため、実寸確認が取れるまで収録しない"
-    },
-    {
-      "note": "18面 53.3×42.3（28466）、20面 83.8×25.4（28461）、40面 30×30（31553）、14面 86.4×38.1（66214）、10面 84×52（31251）等は一片サイズと面付のみ確認済みで、余白・間隔の裏付けが取れ次第追加する"
+      "note": "背表紙系の残り（31422 5面 190×50、31423 8面 190×30、31425 11面 190×17、31427 13面 190×14）は一片サイズと面付のみ確認済み。31421は本家PDF実測で確定済み（左10.0/上13.5/縦間隔5.0）。残りも同じ実測法で確定できる"
     }
   ],
   "products": [
@@ -1106,9 +1103,126 @@
       "gapXMm": 0,
       "gapYMm": 0,
       "use": "宛名"
+    },
+    {
+      "code": "72206",
+      "faces": 6,
+      "cols": 3,
+      "rows": 2,
+      "labelWidthMm": 63,
+      "labelHeightMm": 120,
+      "marginLeftMm": 10.5,
+      "marginTopMm": 23.5,
+      "gapXMm": 0,
+      "gapYMm": 10,
+      "use": "宛名"
+    },
+    {
+      "code": "73206",
+      "faces": 6,
+      "cols": 3,
+      "rows": 2,
+      "labelWidthMm": 63,
+      "labelHeightMm": 120,
+      "marginLeftMm": 10.5,
+      "marginTopMm": 23.5,
+      "gapXMm": 0,
+      "gapYMm": 10,
+      "use": "宛名"
+    },
+    {
+      "code": "66206",
+      "faces": 6,
+      "cols": 3,
+      "rows": 2,
+      "labelWidthMm": 63,
+      "labelHeightMm": 120,
+      "marginLeftMm": 10.5,
+      "marginTopMm": 23.5,
+      "gapXMm": 0,
+      "gapYMm": 10,
+      "use": "宛名"
+    },
+    {
+      "code": "28466",
+      "faces": 18,
+      "cols": 3,
+      "rows": 6,
+      "labelWidthMm": 53.3,
+      "labelHeightMm": 42.3,
+      "marginLeftMm": 21.25,
+      "marginTopMm": 21.6,
+      "gapXMm": 3.8,
+      "gapYMm": 0,
+      "use": "宛名"
+    },
+    {
+      "code": "28461",
+      "faces": 20,
+      "cols": 2,
+      "rows": 10,
+      "labelWidthMm": 83.8,
+      "labelHeightMm": 25.4,
+      "marginLeftMm": 19.3,
+      "marginTopMm": 21.5,
+      "gapXMm": 3.8,
+      "gapYMm": 0,
+      "use": "宛名"
+    },
+    {
+      "code": "31553",
+      "faces": 40,
+      "cols": 5,
+      "rows": 8,
+      "labelWidthMm": 30,
+      "labelHeightMm": 30,
+      "marginLeftMm": 22.0,
+      "marginTopMm": 14.5,
+      "gapXMm": 4.0,
+      "gapYMm": 4.0,
+      "use": "表示"
+    },
+    {
+      "code": "66214",
+      "faces": 14,
+      "cols": 2,
+      "rows": 7,
+      "labelWidthMm": 86.4,
+      "labelHeightMm": 38.1,
+      "marginLeftMm": 18.6,
+      "marginTopMm": 15.15,
+      "gapXMm": 0,
+      "gapYMm": 0,
+      "use": "宛名"
+    },
+    {
+      "code": "31251",
+      "faces": 10,
+      "cols": 2,
+      "rows": 5,
+      "labelWidthMm": 84,
+      "labelHeightMm": 52,
+      "marginLeftMm": 17.0,
+      "marginTopMm": 10.5,
+      "gapXMm": 8.0,
+      "gapYMm": 4.0,
+      "use": "宛名"
+    },
+    {
+      "code": "31421",
+      "faces": 5,
+      "cols": 1,
+      "rows": 5,
+      "labelWidthMm": 190,
+      "labelHeightMm": 50,
+      "marginLeftMm": 10.0,
+      "marginTopMm": 13.5,
+      "gapXMm": 0,
+      "gapYMm": 5.0,
+      "use": "背表紙"
     }
   ],
   "updated": "2026-11-11",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "updatedAt": "2026-11-11"
 }
